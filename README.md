@@ -1,12 +1,15 @@
 ConfigFile
 ==========
 
-This C++11 class reads simple configuration files in a format like this:
+This C++11 class reads simple configuration files, which can be used in all kinds of software. You can even modify and save configuration files, or you can simply use it to read user settings.
+
+The main purpose of this project is to have a simple file format which can be used extremely easily in code, and so that users can easily modify these files without worrying about a lot of syntax. This is a very loose format, which ignores whitespace, and has dynamic data-types.
+
+The file format is like this:
 ```
 someOption = someValue
 ```
-The first part is the name of the option, the second is its value.
-Note that there must be an equals symbol in between.
+The left side is the name of the option, and the right is its value. The equals symbol obviously represents that the option is being set to that value.
 
 Features (file format)
 ----------------------
@@ -50,19 +53,6 @@ int someNumber = config["someNumber"].asInt(); // Read an option as an int
 // a reference to an Option object, which can be read as different types.
 ```
 
-Example file
-------------
-
-```
-someNumber = 500
-someDecimal = 3.1415926535 // Decimals are stored as double precision floats
-someBoolean = True
-anotherBool = false
-bool3 = FALSE // Booleans are not case sensitive
-bool4 = 0 // Zero is false
-bool5 = 100 // A non-zero value is true
-```
-
 Strings
 -------
 
@@ -79,7 +69,7 @@ Symbols in strings work fine too, including quotes:
 ```
 str = "!@#$%^&*()"""""""_+-="
 ```
-The first and last quote are used for determining what is contained in the string.
+The first and last quote are used for determining what is contained in the string, so there is no need to escape characters.
 
 Sections
 --------
@@ -93,9 +83,7 @@ Sections
   * You can even use "" as a section in your code which refers to the default section.
     * Notice that this is used as the default value for the section string parameters.
 
-Sections example
-----------------
-
+Sections example:
 ```
 [SomeSection]
 option = value
@@ -105,6 +93,7 @@ anotherOption = 123
 option = 5000
 ```
 So "option" will be read as "value" in SomeSection, but 5000 in AnotherSection.
+Also, "anotherOption" only exists in SomeSection, so you will not get its value with AnotherSection.
 
 Comments
 --------
@@ -120,3 +109,29 @@ Other notes
 
 * Whitespace is ignored around setting names.
 * Semicolons CANNOT be used to separate lines, only new lines can.
+
+Example file
+------------
+
+```
+[ExampleSection]
+
+someNumber = 500
+
+// Decimals are stored as double precision floats:
+someDecimal = 3.1415926535
+
+// Booleans are not case sensitive:
+someBoolean = True
+anotherBool = false
+bool3 = FALSE
+
+// Zero is false, any non-zero value is true:
+bool4 = 0
+bool5 = 100
+
+[Section2]
+
+// Remember that each section has its own scope
+someNumber = 1000
+```
