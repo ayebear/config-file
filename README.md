@@ -1,18 +1,59 @@
 ConfigFile
 ==========
 
-Description
------------
+This C++11 class reads simple configuration files in a format like this:
+```
+  someOption = someValue
+```
+The first part is the name of the option, the second is its value.
+Note that there must be an equals symbol in between.
 
-This class reads simple configuration files in a format like this:
-    someVariable = someValue
-The first part is the name of the setting, the second is its value.
-There must be an equals symbol in between!
-These settings can be different types too, and named almost anything.
+Features (file format)
+----------------------
 
-Example
--------
+* Options can be named almost anything, except starting with a comment symbol or section symbol.
+* The options can be any of these types:
+  * Integer
+  * Float
+  * Boolean
+  * String
+    * See Strings description for more details.
+* Comments and sections are also supported.
+* Simple arrays are supported if stored in strings. Better support will be available in the future.
 
+Features (class)
+----------------
+
+* Can load/save from/to either a file or string
+* Contains an in-memory std::map of the options
+* Can use operator[] to easily access/create/modify options in the current section
+* Supports using a std::map to load default options from
+  * This means the user isn't required to make a configuration file, and can just add the options they wish to change.
+* You can check if an option exists before trying to access it (which would just create a new one)
+* Has begin() and end() iterators to allow iterating through the sections and options with a range based for loop
+* Can erase options and sections
+* Option class:
+  * Supports using a default value and valid range
+    * If the option is being set to a value out of range, it won't be set
+  * Supports setting/getting as all of the types listed in file format features
+  * All type conversion is done on set, so that accessing is always fast
+
+Example usage of class
+----------------------
+
+You can create ConfigFile objects, which can load/save configuration files. Loading one will actually keep an in-memory std::map of all of the options, so accessing/changing/creating options in your program will be fast. Then, if you want to, you can write the changes back into the same file or into a new file.
+
+```
+ConfigFile config("sample.cfg"); // Loads a configuration file
+int someNumber = config["someNumber"].asInt(); // Read an option as an int
+// Notice the .asInt() above. This is because using operator[] returns
+// a reference to an Option object, which can be read as different types.
+```
+
+Example file
+------------
+
+```
 someNumber = 500
 someDecimal = 3.1415926535 // Decimals are stored as double precision floats
 someBoolean = True
@@ -20,6 +61,7 @@ anotherBool = false
 bool3 = FALSE // Booleans are not case sensitive
 bool4 = 0 // Zero is false
 bool5 = 100 // A non-zero value is true
+```
 
 Strings
 -------
