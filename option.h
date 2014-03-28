@@ -6,7 +6,7 @@
 
 #include <string>
 #include <memory>
-#include "stringutils.h"
+#include "strlib.h"
 
 // This class can store a value of different types based on a string
 class Option
@@ -14,37 +14,39 @@ class Option
     public:
         Option(); // Default constructor
         Option(const std::string&); // Initialize with a string value
-        template <class T> bool operator=(T); // Assignment operator
-        template <class T> bool operator=(const std::string&); // Assignment operator with a string
 
-        // Sets all values to 0 and removes the range
-        void reset();
+        void reset(); // Sets all values to 0 and removes the range
 
         // Setting will compute all possible types
-        bool setString(const std::string&);
-        template <class T> bool set(T);
-        template <class T> bool set(const std::string&);
+        bool operator=(const char* data);
+        bool operator=(const std::string& data);
+        template <typename Type> bool operator=(Type data);
+        bool setString(const std::string& data);
 
         // Getting will simply return the precomputed values
-        const std::string& asString() const;
-        std::string asStringWithQuotes() const;
-        int asInt() const;
-        long asLong() const;
-        float asFloat() const;
-        double asDouble() const;
-        bool asBool() const;
+        const std::string& toString() const;
+        std::string toStringWithQuotes() const;
+        int toInt() const;
+        long toLong() const;
+        float toFloat() const;
+        double toDouble() const;
+        bool toBool() const;
+        char toChar() const; // Based on int
+
+        // This will try to cast the decimal to another type
+        template <typename Type> Type to() const;
 
         // For determining if the option was originally read in as a string with quotes
-        void setQuotes(bool);
+        void setQuotes(bool setting);
         bool hasQuotes();
 
         // For setting the valid range
-        void setRange(double);
-        void setRange(double, double);
+        void setRange(double num1);
+        void setRange(double num1, double num2);
         void removeRange();
 
     private:
-        bool isInRange(double);
+        bool isInRange(double num);
 
         enum RangeType
         {
@@ -66,20 +68,8 @@ class Option
         double rangeMax;
 };
 
-template <class T>
-bool Option::operator=(T data)
-{
-    return set<T>(data);
-}
-
-template <class T>
-bool Option::operator=(const std::string& data)
-{
-    return setString(data);
-}
-
-template <class T>
-bool Option::set(T data)
+template <typename Type>
+bool Option::operator=(Type data)
 {
     // Only set the value if it is in range
     if (isInRange((double)data))
@@ -87,42 +77,43 @@ bool Option::set(T data)
         number = data;
         decimal = data;
         logical = (data != 0);
-        str = StringUtils::toString<T>(data);
+        str = strlib::toString<Type>(data);
+        quotes = false;
         return true;
     }
     return false;
 }
 
-template <class T>
-bool Option::set(const std::string& data)
+template <typename Type>
+Type Option::to() const
 {
-    return setString(data);
+    return static_cast<Type>(decimal);
 }
 
 // Factory functions
 
-template <class T>
-Option makeOption(T data)
+template <typename Type>
+Option makeOption(Type data)
 {
     Option tmp;
-    tmp.set<T>(data);
+    tmp = data;
     return tmp;
 }
 
-template <class T>
-Option makeOption(T data, double num1)
+template <typename Type>
+Option makeOption(Type data, double num1)
 {
     Option tmp;
-    tmp.set<T>(data);
+    tmp = data;
     tmp.setRange(num1);
     return tmp;
 }
 
-template <class T>
-Option makeOption(T data, double num1, double num2)
+template <typename Type>
+Option makeOption(Type data, double num1, double num2)
 {
     Option tmp;
-    tmp.set<T>(data);
+    tmp = data;
     tmp.setRange(num1, num2);
     return tmp;
 }

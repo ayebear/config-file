@@ -28,8 +28,9 @@ Features (class)
 ----------------
 
 * Can load/save from/to either a file or string
+  * Can automatically save the file on object destruction
 * Contains an in-memory std::map of the options
-* Can use operator[] to easily access/create/modify options in the current section
+* Can use operator() to easily access/create/modify options
 * Supports using a std::map to load default options from
   * This means the user isn't required to make a configuration file, and can just add the options they wish to change.
 * You can check if an option exists before trying to access it (which would just create a new one)
@@ -48,10 +49,20 @@ You can create ConfigFile objects, which can load/save configuration files. Load
 
 ```
 ConfigFile config("sample.cfg"); // Loads a configuration file
-int someNumber = config["someNumber"].asInt(); // Read an option as an int
-// Notice the .asInt() above. This is because using operator[] returns
+int someNumber = config("someNumber").toInt(); // Read an option as an int
+// Notice the .toInt() above. This is because using operator[] returns
 // a reference to an Option object, which can be read as different types.
+auto someValue = config("someOption").to<unsigned short>();
+// You can get the option as almost any value that can cast from a double
+config("someNumber") = 200; // You can modify values like this
+config("someNumber") = "Some string"; // You can even set the value to a different type!
+// Sections:
+config("test", "NewSection") = 5; // You can specify the section to use as the 2nd parameter
+config.useSection("NewSection"); // You can alternatively set the current section
+config("test") = 5; // So that this section will be used when nothing is specified
 ```
+
+For more ways of using the ConfigFile and Option classes, please refer to the header files.
 
 Strings
 -------

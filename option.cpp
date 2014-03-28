@@ -17,14 +17,24 @@ Option::Option(const std::string& data)
 {
     quotes = false;
     range = NoRange;
-    set<int>(0);
+    operator=(0);
     setString(data);
 }
 
 void Option::reset()
 {
     range = NoRange;
-    set<int>(0);
+    operator=(0);
+}
+
+bool Option::operator=(const char* data)
+{
+    return setString(data);
+}
+
+bool Option::operator=(const std::string& data)
+{
+    return setString(data);
 }
 
 bool Option::setString(const std::string& data)
@@ -37,34 +47,63 @@ bool Option::setString(const std::string& data)
         decimal = tmpDec; // Set the decimal from the temporary one
         number = decimal; // Truncate to an int
         quotes = !parsedNumber; // No quotes around a number
-        logical = (parsedNumber ? (decimal != 0) : StringUtils::strToBool(data)); // Convert to a boolean
+        logical = (parsedNumber ? (decimal != 0) : strlib::strToBool(data)); // Convert to a boolean
         str = data; // Set the string
         return true;
     }
     return false;
 }
 
-const std::string& Option::asString() const { return str; }
+const std::string& Option::toString() const
+{
+    return str;
+}
 
-std::string Option::asStringWithQuotes() const
+std::string Option::toStringWithQuotes() const
 {
     // Automatically append quotes to the string if it originally had them
     return (quotes ? ('"' + str + '"') : str);
 }
 
-int Option::asInt() const { return number; }
+int Option::toInt() const
+{
+    return number;
+}
 
-long Option::asLong() const { return number; }
+long Option::toLong() const
+{
+    return static_cast<long>(number);
+}
 
-float Option::asFloat() const { return decimal; }
+float Option::toFloat() const
+{
+    return static_cast<float>(decimal);
+}
 
-double Option::asDouble() const { return decimal; }
+double Option::toDouble() const
+{
+    return decimal;
+}
 
-bool Option::asBool() const { return logical; }
+bool Option::toBool() const
+{
+    return logical;
+}
 
-void Option::setQuotes(bool setting) { quotes = setting; }
+char Option::toChar() const
+{
+    return static_cast<char>(number);
+}
 
-bool Option::hasQuotes() { return quotes; }
+void Option::setQuotes(bool setting)
+{
+    quotes = setting;
+}
+
+bool Option::hasQuotes()
+{
+    return quotes;
+}
 
 void Option::setRange(double num1)
 {
