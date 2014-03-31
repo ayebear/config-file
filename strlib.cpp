@@ -151,4 +151,11 @@ bool strToBool(const string& str)
     return (toLower(str) == "true");
 }
 
+bool isBool(const string& str)
+{
+    // The string is only a boolean if it is either "true" or "false"
+    string lowerStr = toLower(str);
+    return (lowerStr == "true" || lowerStr == "false");
+}
+
 }

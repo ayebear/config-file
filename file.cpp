@@ -1,31 +1,33 @@
 // See the file COPYRIGHT.txt for authors and copyright information.
 // See the file LICENSE.txt for copying conditions.
 
-#include "configfile.h"
+#include "File.h"
 #include <fstream>
 #include <iostream>
 #include "strlib.h"
 
-ConfigFile::ConfigFile()
+namespace cfg
+{
+
+File::File()
 {
     resetSettings();
 }
 
-ConfigFile::ConfigFile(const string& filename, bool warnings)
+File::File(const string& filename)
 {
     resetSettings();
-    showWarnings = warnings;
     loadFromFile(filename);
 }
 
-ConfigFile::ConfigFile(const ConfigMap& defaultOptions, bool warnings)
+File::File(const ConfigMap& defaultOptions, bool warnings)
 {
     resetSettings();
     showWarnings = warnings;
     setDefaultOptions(defaultOptions);
 }
 
-ConfigFile::ConfigFile(const string& filename, const ConfigMap& defaultOptions, bool warnings)
+File::File(const string& filename, const ConfigMap& defaultOptions, bool warnings)
 {
     resetSettings();
     showWarnings = warnings;
@@ -33,13 +35,13 @@ ConfigFile::ConfigFile(const string& filename, const ConfigMap& defaultOptions, 
     loadFromFile(filename);
 }
 
-ConfigFile::~ConfigFile()
+File::~File()
 {
     if (autosave)
         writeToFile();
 }
 
-bool ConfigFile::loadFromFile(const string& filename)
+bool File::loadFromFile(const string& filename)
 {
     bool status = false;
     configFilename = filename;
@@ -54,14 +56,14 @@ bool ConfigFile::loadFromFile(const string& filename)
     return status;
 }
 
-void ConfigFile::loadFromString(const string& str)
+void File::loadFromString(const string& str)
 {
     std::vector<string> lines;
     strlib::getLinesFromString(str, lines, false);
     parseLines(lines);
 }
 
-bool ConfigFile::writeToFile(string filename) const
+bool File::writeToFile(string filename) const
 {
     if (filename.empty())
         filename = configFilename;
@@ -69,105 +71,105 @@ bool ConfigFile::writeToFile(string filename) const
     return strlib::writeStringToFile(filename, buildString());
 }
 
-void ConfigFile::writeToString(string& str) const
+void File::writeToString(string& str) const
 {
     for (const auto& section: options) // Go through all of the sections
     {
         if (!section.first.empty())
             str += '[' + section.first + "]\n"; // Add the section line if it is not blank
         for (const auto& o: section.second) // Go through all of the options in this section
-            str += o.first + " = " + o.second.toStringWithQuotes() + '\n'; // Include the original quotes if any
+            str += o.first + " = " + o.second.buildArrayString() + '\n';
         str += '\n';
     }
     if (!str.empty() && str.back() == '\n')
         str.pop_back(); // Strip the extra new line at the end
 }
 
-string ConfigFile::buildString() const
+string File::buildString() const
 {
     string configStr;
     writeToString(configStr);
     return configStr;
 }
 
-void ConfigFile::setShowWarnings(bool setting)
+void File::setShowWarnings(bool setting)
 {
     showWarnings = setting;
 }
 
-void ConfigFile::setAutosave(bool setting)
+void File::setAutosave(bool setting)
 {
     autosave = setting;
 }
 
-void ConfigFile::resetSettings()
+void File::resetSettings()
 {
     showWarnings = false;
     autosave = false;
 }
 
-Option& ConfigFile::operator()(const string& name, const string& section)
+Option& File::operator()(const string& name, const string& section)
 {
     return options[section][name];
 }
 
-Option& ConfigFile::operator()(const string& name)
+Option& File::operator()(const string& name)
 {
     return options[currentSection][name];
 }
 
-bool ConfigFile::optionExists(const string& name, const string& section) const
+bool File::optionExists(const string& name, const string& section) const
 {
     auto sectionFound = options.find(section);
     return (sectionFound != options.end() && sectionFound->second.find(name) != sectionFound->second.end());
 }
 
-bool ConfigFile::optionExists(const string& name) const
+bool File::optionExists(const string& name) const
 {
     return optionExists(name, currentSection);
 }
 
-void ConfigFile::setDefaultOptions(const ConfigMap& defaultOptions)
+void File::setDefaultOptions(const ConfigMap& defaultOptions)
 {
     options.insert(defaultOptions.begin(), defaultOptions.end());
 }
 
-void ConfigFile::useSection(const string& section)
+void File::useSection(const string& section)
 {
     currentSection = section;
 }
 
-ConfigFile::ConfigMap::iterator ConfigFile::begin()
+File::ConfigMap::iterator File::begin()
 {
     return options.begin();
 }
 
-ConfigFile::ConfigMap::iterator ConfigFile::end()
+File::ConfigMap::iterator File::end()
 {
     return options.end();
 }
 
-ConfigFile::Section& ConfigFile::getSection(const string& section)
+File::Section& File::getSection(const string& section)
 {
     return options[section];
 }
 
-ConfigFile::Section& ConfigFile::getSection()
+File::Section& File::getSection()
 {
     return options[currentSection];
 }
 
-bool ConfigFile::sectionExists(const string& section) const
+bool File::sectionExists(const string& section) const
 {
     return (options.find(section) != options.end());
 }
 
-bool ConfigFile::sectionExists() const
+bool File::sectionExists() const
 {
     return sectionExists(currentSection);
 }
 
-bool ConfigFile::eraseOption(const string& name, const string& section)
+bool File::eraseOption(const string& name, const string& section)
 {
     bool status = false;
     auto sectionFound = options.find(section);
@@ -176,29 +178,31 @@ bool ConfigFile::eraseOption(const string& name, const string& section)
     return status;
 }
 
-bool ConfigFile::eraseOption(const string& name)
+bool File::eraseOption(const string& name)
 {
     return eraseOption(name, currentSection);
 }
 
-bool ConfigFile::eraseSection(const string& section)
+bool File::eraseSection(const string& section)
 {
     return (options.erase(section) > 0);
 }
 
-bool ConfigFile::eraseSection()
+bool File::eraseSection()
 {
     return eraseSection(currentSection);
 }
 
-void ConfigFile::clear()
+void File::clear()
 {
     options.clear();
 }
 
-void ConfigFile::parseLines(std::vector<string>& lines)
+void File::parseLines(std::vector<string>& lines)
 {
-    string section = "";
+    currentArrayStack.clear();
+    arrayOptionName.clear();
+    string section;
     bool multiLineComment = false;
     Comment commentType = Comment::None;
     for (string& line: lines) // Iterate through the std::vector of strings
@@ -222,47 +226,105 @@ void ConfigFile::parseLines(std::vector<string>& lines)
     }
 }
 
-bool ConfigFile::isSection(const string& section) const
+bool File::isSection(const string& section) const
 {
     return (section.size() >= 2 && section.front() == '[' && section.back() == ']');
 }
 
-void ConfigFile::parseSectionLine(const string& line, string& section)
+void File::parseSectionLine(const string& line, string& section)
 {
     section = line.substr(1, line.size() - 2); // Set the current section
     options[section]; // Add that section to the map
 }
 
-void ConfigFile::parseOptionLine(const string& line, const string& section)
+void File::parseOptionLine(const string& line, const string& section)
 {
-    size_t equalPos = line.find("="); // Find the position of the "=" symbol
-    if (equalPos != string::npos && equalPos >= 1) // Ignore the line if there is no "=" symbol
+    if (!currentArrayStack.empty())
     {
-        string name, value;
-        // Extract the name and value
-        name = line.substr(0, equalPos);
-        value = line.substr(equalPos + 1);
-        // Trim any whitespace around the name and value
-        strlib::trimWhitespace(name);
+        // Process another line in the array
+        // This could be 1 of 3 things:
+        // 1. { (array start)
+        // 2. X (another value)
+        // 3. } (array end)
+        string value = line;
         strlib::trimWhitespace(value);
-        // Remove outer quotes if any
-        bool trimmedQuotes = strlib::trimQuotes(value);
-        // Add/update the option in memory
-        Option& option = options[section][name];
-        bool optionSet = (option = value);
-        if (trimmedQuotes) // If quotes were removed
-            option.setQuotes(true); // Add quotes to the option
-        if (showWarnings && !optionSet)
-            std::cout << "Warning: Option \"" << name << "\" was out of range. Using default value: " << option.toStringWithQuotes() << std::endl;
+        if (value.back() == ',')
+            value.pop_back();
+        strlib::trimWhitespace(value); // In case there was whitespace before the comma
+        if (!value.empty())
+        {
+            Option& option = getArrayOption(section, arrayOptionName);
+            if (value == "{")
+                startArray(option);
+            else if (value == "}")
+                currentArrayStack.pop_back();
+            else
+                setOption(option.push(), value);
+        }
+    }
+    else
+    {
+        // Process a regular option line (or the start of a new array)
+        size_t equalPos = line.find("="); // Find the position of the "=" symbol
+        if (equalPos != string::npos && equalPos >= 1) // Ignore the line if there is no "=" symbol
+        {
+            string name, value;
+            // Extract the name and value
+            name = line.substr(0, equalPos);
+            value = line.substr(equalPos + 1);
+            // Trim any whitespace around the name and value
+            strlib::trimWhitespace(name);
+            strlib::trimWhitespace(value);
+            // Check if this is the start of an array
+            Option& option = options[section][name];
+            if (value == "{")
+            {
+                arrayOptionName = name;
+                currentArrayStack.assign(1, 0);
+            }
+            else
+            {
+                if (!setOption(option, value) && showWarnings)
+                {
+                    std::cout << "Warning: Option \"" << name << "\" in [" << section << "] was out of range.\n";
+                    std::cout << "    Using default value: " << option.toStringWithQuotes() << std::endl;
+                }
+            }
+        }
     }
 }
 
-bool ConfigFile::isEndComment(const string& str) const
+bool File::setOption(Option& option, const string& value)
+{
+    string trimmedValue = value;
+    bool trimmedQuotes = strlib::trimQuotes(trimmedValue); // Remove quotes if any
+    bool optionSet = (option = trimmedValue); // Try to set the option
+    if (trimmedQuotes) // If quotes were removed
+        option.setQuotes(true); // Add quotes to the option
+    return optionSet;
+}
+
+Option& File::getArrayOption(const string& section, const string& name)
+{
+    Option* currentOption = &options[section][name];
+    // Start at 1, because the 0th element represents the current option above
+    for (unsigned i = 1; i < currentArrayStack.size(); ++i)
+        currentOption = &((*currentOption)[currentArrayStack[i]]);
+    return *currentOption;
+}
+
+void File::startArray(Option& option)
+{
+    option.push(); // This new option will be holding the array starting with this "{"
+    currentArrayStack.push_back(option.size() - 1);
+}
+
+bool File::isEndComment(const string& str) const
 {
     return (str.find("*/") != string::npos);
 }
 
-ConfigFile::Comment ConfigFile::getCommentType(const string& str, bool checkEnd) const
+File::Comment File::getCommentType(const string& str, bool checkEnd) const
 {
     // Comment symbols and types
     static const std::vector<string> commentSymbols = {"/*", "//", "#", "::", ";"};
@@ -288,7 +350,7 @@ ConfigFile::Comment ConfigFile::getCommentType(const string& str, bool checkEnd)
     return commentType;
 }
 
-ConfigFile::Comment ConfigFile::stripComments(string& str, bool checkEnd)
+File::Comment File::stripComments(string& str, bool checkEnd)
 {
     Comment commentType = getCommentType(str, checkEnd);
     if (commentType == Comment::Single)
@@ -296,33 +358,4 @@ ConfigFile::Comment ConfigFile::stripComments(string& str, bool checkEnd)
     return commentType;
 }
 
-std::vector<string> ConfigFile::splitArrayString(string str) const
-{
-    // There must be quotes in the array to determine what the elements are
-    // Example format: {"1", "2", "test"}
-    std::vector<string> vec;
-    if (str.size() >= 2 && str.front() == '{' && str.back() == '}')
-    {
-        str.pop_back();
-        str.erase(str.begin());
-    }
-    strlib::split(str, ",", vec);
-    for (auto& elem: vec)
-    {
-        strlib::trimWhitespace(elem);
-        strlib::trimQuotes(elem);
-    }
-    return vec;
-}
-
-string ConfigFile::joinArrayString(const std::vector<string>& vec) const
-{
-    // Join a vector back together into a properly formatted string
-    string str = "{";
-    for (auto& elem: vec)
-        str += elem + ",";
-    if (str.back() == ',')
-        str.pop_back();
-    str += "}";
-    return str;
 }

@@ -20,8 +20,6 @@ void stripNewLines(string&); // Removes all new lines/carriage returns from a st
 unsigned replaceAll(string&, const string&, const string&); // Replaces all instances of a sub-string with another string, and returns the number of replaces
 void split(const string&, const string&, std::vector<string>&, bool = true); // Splits a string into a vector of strings with a delimeter
 string toLower(string); // Creates an all-lowercase version of the passed in string
-
-// String checking
 bool areQuotes(char, char); // Returns true if both characters are either single or double quotes
 bool mustEndWith(string&, const string&); // Appends the second string if the first doesn't end with it
 
@@ -32,6 +30,7 @@ bool writeStringToFile(const string&, const string&); // Writes a string to a fi
 
 // String converting
 bool strToBool(const string&); // Parses a string to determine its boolean value
+bool isBool(const string&); // Determines if a string is either "true" or "false"
 
 // Converts most types to strings using a string stream
 template <typename T>

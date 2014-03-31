@@ -11,23 +11,19 @@
 
 using std::string;
 
-/*
-TODO:
-    Handle arrays spanned across multiple lines.
-    Writing should preserve formatting and comments.
-        Maybe it could "merge" the contents into the file, new values in existing options would be updated,
-            new options would be appended to the end of the file.
-        In order for this to do this, it must either read the file before writing (which is slow), or it must
-            store the entire original file in memory (which takes up a lot of memory).
-        Either way, it should be an optional "feature", where you can choose to rebuild the file, or merge.
-        Right now it is completely destructive, it doesn't preserve ordering, comments, invalid data, or whitespace.
-*/
+namespace cfg
+{
 
 /*
 A class for reading/writing configuration files.
 See README.md for more information.
+
+TODO:
+    Handle escape codes inside of strings.
+    Handle multiple array elements on the same line.
+    Writing should optionally preserve formatting and comments.
 */
-class ConfigFile
+class File
 {
     public:
         // Types used to store the options
@@ -35,11 +31,11 @@ class ConfigFile
         typedef std::map<string,Section> ConfigMap;
 
         // Constructors
-        ConfigFile();
-        ConfigFile(const string& filename, bool warnings = false);
-        ConfigFile(const ConfigMap& defaultOptions, bool warnings = false);
-        ConfigFile(const string& filename, const ConfigMap& defaultOptions, bool warnings = false);
-        ~ConfigFile();
+        File();
+        File(const string& filename);
+        File(const ConfigMap& defaultOptions, bool warnings = false);
+        File(const string& filename, const ConfigMap& defaultOptions, bool warnings = false);
+        ~File();
 
         // Loading/saving
         bool loadFromFile(const string& filename); // Loads options from a file
@@ -76,10 +72,6 @@ class ConfigFile
         bool eraseSection(); // Erases the default section
         void clear(); // Clears all of the sections and options in memory, but keeps the filename
 
-        // Arrays (still need to finish these)
-        std::vector<string> splitArrayString(string str) const; // Converts an array string to a vector
-        string joinArrayString(const std::vector<string>& vec) const; // Converts a vector to an array string
-
     private:
         enum class Comment
         {
@@ -94,6 +86,10 @@ class ConfigFile
         bool isSection(const string& section) const; // Returns true if the line is a section header
         void parseSectionLine(const string& line, string& section); // Processes a section header line and adds a section to the map
         void parseOptionLine(const string& line, const string& section); // Processes an option line and adds an option to the map
+        //void setOption(const string& section, const string& name, const string& value); // Adds or sets an option
+        bool setOption(Option& option, const string& value); // Sets an existing option
+        Option& getArrayOption(const string& section, const string& name); // Returns an option at the current array level
+        void startArray(Option& option); // Starts another array when "{" is found
 
         // Comment handling
         bool isEndComment(const string& str) const; // Returns true if it contains a multiple-line end comment symbol
@@ -106,6 +102,12 @@ class ConfigFile
         string currentSection; // The default current section
         bool showWarnings; // Show warnings when loading options that are out of range
         bool autosave; // Automatically write to the last file loaded on destruction
+
+        // Array related objects
+        std::vector<unsigned> currentArrayStack; // Stack of array indices for current option
+        string arrayOptionName; // Name of option whose array is currently being handled
 };
+
+}
 
 #endif

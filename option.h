@@ -6,20 +6,26 @@
 
 #include <string>
 #include <memory>
+#include <vector>
 #include "strlib.h"
+
+namespace cfg
+{
 
 // This class can store a value of different types based on a string
 class Option
 {
     public:
         Option(); // Default constructor
-        Option(const std::string&); // Initialize with a string value
+        Option(const std::string& data); // Initialize with a string value
+        Option(const Option& data); // Copy constructor
 
         void reset(); // Sets all values to 0 and removes the range
 
         // Setting will compute all possible types
         bool operator=(const char* data);
         bool operator=(const std::string& data);
+        Option& operator=(const Option& data);
         template <typename Type> bool operator=(Type data);
         bool setString(const std::string& data);
 
@@ -45,6 +51,20 @@ class Option
         void setRange(double num1, double num2);
         void removeRange();
 
+        // Array manipulation
+        Option& push(const Option& opt = Option()); // push_back
+        void pop(); // pop_back
+        Option& operator[](unsigned pos);
+        Option& back();
+        unsigned size() const;
+        void clear();
+
+        // Arrays as strings
+        std::string buildArrayString(const std::string& indentStr = "") const; // Returns the array in string format
+        //bool parseArrayString(const std::string& arrayStr); // Sets the array elements from a string
+        //bool parseArrayLines(const std::vector<std::string>& lines); // Sets the array elements from multiple lines
+            // Note: This will be moved to private later.
+
     private:
         bool isInRange(double num);
 
@@ -66,6 +86,13 @@ class Option
         RangeType range;
         double rangeMin;
         double rangeMax;
+
+        using OptionVector = std::vector<Option>;
+        std::unique_ptr<OptionVector> options;
+        // Wrapping the vector with a pointer to prevent recursive construction and incomplete type issues
+        // Also, this is only created when push() is called for the first time
+        // Also, this array is separate from the option itself, and nothing is kept in sync
+            // This means that the first element can be different from the option.
 };
 
 template <typename Type>
@@ -116,6 +143,8 @@ Option makeOption(Type data, double num1, double num2)
     tmp = data;
     tmp.setRange(num1, num2);
     return tmp;
+}
+
 }
 
 #endif
