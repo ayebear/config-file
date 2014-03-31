@@ -11,18 +11,71 @@ someOption = someValue
 ```
 The left side is the name of the option, and the right is its value. The equals symbol obviously represents that the option is being set to that value.
 
+Example file
+------------
+
+```
+[ExampleSection]
+
+// Numeric types:
+someNumber = 500
+eulersNumber = 2.718281828459045
+
+// Booleans:
+someBoolean = true
+anotherBool = FALSE
+// The values of booleans are not case sensitive.
+
+// Booleans can also be in numeric form.
+// Zero is false, any non-zero number is true.
+bool1 = 0
+bool2 = 100
+
+// Strings:
+name = "Qwerty"
+color = "Blue"
+
+// Option names are case sensitive:
+number = 42
+NUMBER = 250
+// These are two different values.
+NUMBER = 99999
+// Options of the same name will rewrite the values of previous options.
+// number is 42
+// NUMBER is 99999
+
+// Arrays:
+myArray = {
+    "Some text.",
+    12345,
+    {
+        27.52,
+        "Inside another array",
+        true
+    },
+    "Back to outer array"
+}
+// Arrays are jagged and fully dynamic, please refer to the "Arrays" section for more information.
+
+[Section2]
+
+// Each section has a different "scope"
+someNumber = 1000
+```
+
 Features (file format)
 ----------------------
 
 * Options can be named almost anything, except starting with a comment symbol or section symbol.
 * The options can be any of these types:
-  * Integer
-  * Float
-  * Boolean
-  * String
+  * Integers (-1, 0, 1, 2)
+  * Decimals (0.0123, 99.765, -346.2)
+  * Booleans (true, false, TRUE, FALSE, 0, 1)
+  * Strings ("Insert text here")
     * See Strings description for more details.
+  * Arrays ({element1, element2, element3})
+    * See Arrays description for more details.
 * Comments and sections are also supported.
-* Simple arrays are supported if stored in strings. Better support will be available in the future.
 
 Features (class)
 ----------------
@@ -42,30 +95,10 @@ Features (class)
   * Supports setting/getting as all of the types listed in file format features
   * All type conversion is done on set, so that accessing is always fast
 
-Example usage of class
-----------------------
-
-You can create ConfigFile objects, which can load/save configuration files. Loading one will actually keep an in-memory std::map of all of the options, so accessing/changing/creating options in your program will be fast. Then, if you want to, you can write the changes back into the same file or into a new file.
-
-```
-ConfigFile config("sample.cfg"); // Loads a configuration file
-int someNumber = config("someNumber").toInt(); // Read an option as an int
-// Notice the .toInt() above. This is because using operator[] returns
-// a reference to an Option object, which can be read as different types.
-auto someValue = config("someOption").to<unsigned short>();
-// You can get the option as almost any value that can cast from a double
-config("someNumber") = 200; // You can modify values like this
-config("someNumber") = "Some string"; // You can even set the value to a different type!
-// Sections:
-config("test", "NewSection") = 5; // You can specify the section to use as the 2nd parameter
-config.useSection("NewSection"); // You can alternatively set the current section
-config("test") = 5; // So that this section will be used when nothing is specified
-```
-
-For more ways of using the ConfigFile and Option classes, please refer to the header files.
-
 Strings
 -------
+
+NOTE: This is changing in the near future, all strings must have quotes and use proper escape codes for special characters such as newlines, whitespace, etc.
 
 How strings are handled:
 ```
@@ -81,6 +114,11 @@ Symbols in strings work fine too, including quotes:
 str = "!@#$%^&*()"""""""_+-="
 ```
 The first and last quote are used for determining what is contained in the string, so there is no need to escape characters.
+
+Arrays
+------
+
+More information will be here in the next few days.
 
 Sections
 --------
@@ -121,28 +159,109 @@ Other notes
 * Whitespace is ignored around setting names.
 * Semicolons CANNOT be used to separate lines, only new lines can.
 
-Example file
-------------
+Example usage of classes
+------------------------
+
+You can create cfg::File objects, which can load/save configuration files. Loading one will actually keep an in-memory std::map of all of the options, so accessing/changing/creating options in your program will be fast. Then, if you want to, you can write the changes back into the same file or into a new file.
+
+### Loading/saving configuration files
+
+#### Loading files
+```
+// First, you will need to include the header file:
+#include "file.h"
+// or
+#include "configfile/file.h"
+// depending on if you have set the include directory in your IDE/compiler.
+
+// Load a configuration file:
+cfg::File config("sample.cfg");
+// Or you can load it after you construct the object:
+cfg::File config;
+config.loadFromFile("sample.cfg");
+```
+
+#### Saving files
+```
+// Save to a file:
+cfg::File config;
+/* ... */
+config.writeToFile("saved.cfg");
+
+// Another way is to just save the last loaded file:
+cfg::File config("sample.cfg");
+/* ... */
+config.writeToFile();
+```
+
+#### Loading with default options
+```
+// You can also specify default options:
+const cfg::File::ConfigMap defaultOptions = {
+{"ExampleSection", {
+    {"someOption", cfg::makeOption(false)},
+    {"pi", cfg::makeOption(3.14159265358979)},
+    {"name", cfg::makeOption("Test")},
+    {"percent", cfg::makeOption(0, 0, 100)}
+}}};
+// Load a file using those default options:
+cfg::File config("sample.cfg", defaultOptions);
+// If any of those options do not exist in the file, the defaults will be used.
+```
+
+### Manipulating options
+
+#### Option ranges
+
+Notice in the previous example, there were three parameters used in cfg::makeOption(). The parameters are as follows:
+
+* Default value (required)
+* Minimum value (optional)
+* Maximum value (optional)
+
+Whenever a value in the configuration file is loaded or an option is being set in your program, it will only be set if the value is within that range. Assuming the above code is included, here is an example:
 
 ```
-[ExampleSection]
-
-someNumber = 500
-
-// Decimals are stored as double precision floats:
-someDecimal = 3.1415926535
-
-// Booleans are not case sensitive:
-someBoolean = True
-anotherBool = false
-bool3 = FALSE
-
-// Zero is false, any non-zero value is true:
-bool4 = 0
-bool5 = 100
-
-[Section2]
-
-// Remember that each section has its own scope
-someNumber = 1000
+config.useSection("ExampleSection"); // Use the correct section
+config("percent") = 50; // OK, value is in range
+config("percent") = 9000; // Not set, because value is out of range
+// "percent" ends up as 50
 ```
+
+#### Reading values
+```
+// Read an option as an int:
+int someNumber = config("someNumber").toInt();
+// Notice the .toInt() above. This is because using operator() returns
+// a reference to a cfg::Option object, which can be read as different types.
+// Some other types that it can be read as:
+std::string str = config("someString").toString();
+double dec = config("someDouble").toDouble();
+bool someBool = config("someBool").toBool();
+// You can also get the option as almost any value that can cast from a double:
+auto someValue = config("someOption").to<unsigned short>();
+```
+
+#### Setting values
+```
+// Modifying options:
+config("someNumber") = 200;
+// Options can be set to values of different types:
+config("someNumber") = 3.14159;
+config("someNumber") = "Some string";
+config("someNumber") = true;
+```
+
+#### Accessing options with sections
+```
+// Sections:
+// The 2nd parameter of operator() is the section to use:
+config("test", "NewSection") = 5;
+// You can alternatively set the current section to use by default:
+config.useSection("NewSection");
+// So that this section will be used when nothing is specified:
+config("test") = 5;
+// Both will set "test" in "NewSection" to 5.
+```
+
+For more ways of using the ConfigFile and Option classes, please refer to the header files.
