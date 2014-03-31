@@ -55,7 +55,7 @@ myArray = {
     },
     "Back to outer array"
 }
-// Arrays are jagged and fully dynamic, please refer to the "Arrays" section for more information.
+// Please refer to the "Arrays" section for more information.
 
 [Section2]
 
@@ -76,6 +76,8 @@ Features (file format)
   * Arrays ({element1, element2, element3})
     * See Arrays description for more details.
 * Comments and sections are also supported.
+* Extra whitespace is ignored around mostly everything.
+  * New lines still have meaning though.
 
 Features (class)
 ----------------
@@ -118,7 +120,62 @@ The first and last quote are used for determining what is contained in the strin
 Arrays
 ------
 
-More information will be here in the next few days.
+Arrays are fully dynamic and jagged, meaning you can have arrays within arrays with more arrays (and so on). Each element of the array can be an Option, or another array of Option objects. In memory they are stored as a type of tree structure. They are stored inside of the Option class just like all of the other types.
+
+### Some examples:
+
+sample.cfg
+```
+colors = {
+    "Red",
+    "Blue",
+    "Green",
+    "Yellow"
+}
+```
+You can loop through the array like so:
+```
+cfg::File config("sample.cfg");
+auto& colors = config("colors");
+for (unsigned i = 0; i < colors.size(); ++i)
+    std::cout << colors[i].toString() << std::endl;
+// Note: You will be able to use a range based for loop in the near future.
+```
+This will only get you the outer-most elements in the array. If you need to access things deeper, you would just access the element's array the same way, since all Options contain an array of more Options (but they start out empty).
+
+Here is an example of a jagged array:
+
+sample2.cfg
+```
+stuff = {
+    {
+        "values",
+        123,
+        456
+    },
+    {
+        "more values",
+        1.2345,
+        99,
+        3000.987
+    }
+}
+```
+You can loop through the array like so:
+```
+cfg::File config("sample.cfg");
+auto& stuff = config("stuff");
+for (unsigned i = 0; i < stuff.size(); ++i)
+    for (unsigned j = 0; j < stuff[i].size(); ++j)
+        std::cout << colors[i][j].toString() << std::endl;
+```
+
+More examples such as modifying the arrays in code will be here later.
+
+Dictionaries
+------------
+
+This could be like the jagged arrays, except elements could be accessed by an Option as the key. It is currently undecided if there should be this feature, because the options themselves are already like a dictionary.
 
 Sections
 --------
@@ -152,12 +209,6 @@ Comments
   * The symbols are checked only in the beginning of each line
   * The whole line is ignored if it is a comment
 * Multi-line comments are also supported with /* and */
-
-Other notes
------------
-
-* Whitespace is ignored around setting names.
-* Semicolons CANNOT be used to separate lines, only new lines can.
 
 Example usage of classes
 ------------------------
@@ -228,7 +279,7 @@ config("percent") = 9000; // Not set, because value is out of range
 // "percent" ends up as 50
 ```
 
-#### Reading values
+#### Reading options
 ```
 // Read an option as an int:
 int someNumber = config("someNumber").toInt();
@@ -242,7 +293,7 @@ bool someBool = config("someBool").toBool();
 auto someValue = config("someOption").to<unsigned short>();
 ```
 
-#### Setting values
+#### Setting options
 ```
 // Modifying options:
 config("someNumber") = 200;
@@ -255,7 +306,7 @@ config("someNumber") = true;
 #### Accessing options with sections
 ```
 // Sections:
-// The 2nd parameter of operator() is the section to use:
+// The second parameter of operator() is the section to use:
 config("test", "NewSection") = 5;
 // You can alternatively set the current section to use by default:
 config.useSection("NewSection");
@@ -264,4 +315,4 @@ config("test") = 5;
 // Both will set "test" in "NewSection" to 5.
 ```
 
-For more ways of using the ConfigFile and Option classes, please refer to the header files.
+For more ways of using the cfg::File and cfg::Option classes, please refer to the header files.
