@@ -1,8 +1,8 @@
 // See the file COPYRIGHT.txt for authors and copyright information.
 // See the file LICENSE.txt for copying conditions.
 
-#ifndef OPTION_H
-#define OPTION_H
+#ifndef CFG_OPTION_H
+#define CFG_OPTION_H
 
 #include <string>
 #include <memory>

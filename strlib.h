@@ -1,8 +1,8 @@
 // See the file COPYRIGHT.txt for authors and copyright information.
 // See the file LICENSE.txt for copying conditions.
 
-#ifndef STRINGUTILS_H
-#define STRINGUTILS_H
+#ifndef STRLIB_H
+#define STRLIB_H
 
 #include <string>
 #include <sstream>

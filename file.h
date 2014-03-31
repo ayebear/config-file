@@ -1,8 +1,8 @@
 // See the file COPYRIGHT.txt for authors and copyright information.
 // See the file LICENSE.txt for copying conditions.
 
-#ifndef CONFIGFILE_H
-#define CONFIGFILE_H
+#ifndef CFG_FILE_H
+#define CFG_FILE_H
 
 #include <map>
 #include <vector>
@@ -27,8 +27,8 @@ class File
 {
     public:
         // Types used to store the options
-        typedef std::map<string,Option> Section;
-        typedef std::map<string,Section> ConfigMap;
+        using Section = std::map<string, Option>;
+        using ConfigMap = std::map<string, Section>;
 
         // Constructors
         File();
