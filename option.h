@@ -15,6 +15,8 @@ namespace cfg
 // This class can store a value of different types based on a string
 class Option
 {
+    using OptionVector = std::vector<Option>;
+
     public:
         Option(); // Default constructor
         Option(const std::string& data); // Initialize with a string value
@@ -58,6 +60,8 @@ class Option
         Option& back();
         unsigned size() const;
         void clear();
+        OptionVector::iterator begin();
+        OptionVector::iterator end();
 
         // Arrays as strings
         std::string buildArrayString(const std::string& indentStr = "") const; // Returns the array in string format
@@ -87,7 +91,6 @@ class Option
         double rangeMin;
         double rangeMax;
 
-        using OptionVector = std::vector<Option>;
         std::unique_ptr<OptionVector> options;
         // Wrapping the vector with a pointer to prevent recursive construction and incomplete type issues
         // Also, this is only created when push() is called for the first time
@@ -116,6 +119,9 @@ Type Option::to() const
 {
     return static_cast<Type>(decimal);
 }
+
+// Stream operator overload
+std::ostream& operator<<(std::ostream& stream, const Option& option);
 
 // Factory functions
 

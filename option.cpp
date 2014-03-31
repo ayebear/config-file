@@ -184,6 +184,16 @@ void Option::clear()
     options.reset();
 }
 
+Option::OptionVector::iterator Option::begin()
+{
+    return options->begin();
+}
+
+Option::OptionVector::iterator Option::end()
+{
+    return options->end();
+}
+
 std::string Option::buildArrayString(const std::string& indentStr) const
 {
     // Continue building array strings until the option is just a single element and not an array
@@ -231,6 +241,12 @@ bool Option::isInRange(double num)
     return ((range == NoRange) || // If there is no range, then it will always be in range
             (range == MinRange && num >= rangeMin) || // If a minimum range is set, make sure the number is >= the minimum range
             (range == MinMaxRange && num >= rangeMin && num <= rangeMax)); // If a full range is set, make sure the number is between the minimum and maximum numbers
+}
+
+std::ostream& operator<<(std::ostream& stream, const Option& option)
+{
+    stream << option.toString();
+    return stream;
 }
 
 }
