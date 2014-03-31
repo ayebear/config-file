@@ -122,7 +122,7 @@ Arrays
 
 Arrays are fully dynamic and jagged, meaning you can have arrays within arrays with more arrays (and so on). Each element of the array can be an Option, or another array of Option objects. In memory they are stored as a type of tree structure. They are stored inside of the Option class just like all of the other types.
 
-### Some examples:
+### Reading values
 
 sample.cfg
 ```
@@ -133,13 +133,21 @@ colors = {
     "Yellow"
 }
 ```
+
+Print the 3rd color (green):
+```
+std::cout << colors[2] << std::endl;
+// Note: The << operator is overloaded and just calls toString().
+```
+
 You can loop through the array like so:
 ```
+// Load the file
 cfg::File config("sample.cfg");
-auto& colors = config("colors");
-for (unsigned i = 0; i < colors.size(); ++i)
-    std::cout << colors[i].toString() << std::endl;
-// Note: You will be able to use a range based for loop in the near future.
+
+// Loop through and print the elements
+for (auto& col: config("colors"))
+    std::cout << col << std::endl;
 ```
 This will only get you the outer-most elements in the array. If you need to access things deeper, you would just access the element's array the same way, since all Options contain an array of more Options (but they start out empty).
 
@@ -161,21 +169,55 @@ stuff = {
     }
 }
 ```
-You can loop through the array like so:
+You can loop through the jagged array like so:
 ```
-cfg::File config("sample.cfg");
-auto& stuff = config("stuff");
-for (unsigned i = 0; i < stuff.size(); ++i)
-    for (unsigned j = 0; j < stuff[i].size(); ++j)
-        std::cout << colors[i][j].toString() << std::endl;
+cfg::File config("sample2.cfg");
+for (auto& arr: config("stuff"))
+    for (auto& elem: arr)
+        std::cout << elem << std::endl;
 ```
 
-More examples such as modifying the arrays in code will be here later.
+### Modifying values
 
-Dictionaries
-------------
+To add/remove options from arrays, you can use the push and pop methods in the Option class.
+```
+// This can also be an option from a cfg::File object
+Option test;
 
-This could be like the jagged arrays, except elements could be accessed by an Option as the key. It is currently undecided if there should be this feature, because the options themselves are already like a dictionary.
+// push takes an option object
+test.push(cfg::makeOption("Some text"));
+
+// A blank Option will be added if nothing is passed in
+test.push();
+
+// push also returns a reference to the newly added option object
+test.push() = "Some more text";
+test.push().push().push();
+
+// Remove the last option with pop()
+test.pop();
+
+// Remove all of the options, reverting the option back to a single element
+test.clear();
+```
+
+To change existing values, you can use operator[] just like you would to read the values:
+```
+// Add some values to "test"
+Option test;
+test.push() = "Testing";
+test.push() = 500;
+test.push() = 99.999;
+
+// Change the values in "test"
+test[1] = "Five hundred";
+
+// Change/access the last value in the array
+test.back() = 45.67;
+
+// You can start new arrays within already existing elements:
+test[2].push() = "I'm in an array inside of another array"
+```
 
 Sections
 --------
