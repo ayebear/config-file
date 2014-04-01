@@ -7,7 +7,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include "option.h"
+#include "configoption.h"
 
 using std::string;
 

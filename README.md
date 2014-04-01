@@ -262,10 +262,7 @@ You can create cfg::File objects, which can load/save configuration files. Loadi
 #### Loading files
 ```
 // First, you will need to include the header file:
-#include "file.h"
-// or
-#include "configfile/file.h"
-// depending on if you have set the include directory in your IDE/compiler.
+#include "configfile.h"
 
 // Load a configuration file:
 cfg::File config("sample.cfg");

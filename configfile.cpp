@@ -1,7 +1,7 @@
 // See the file COPYRIGHT.txt for authors and copyright information.
 // See the file LICENSE.txt for copying conditions.
 
-#include "file.h"
+#include "configfile.h"
 #include <fstream>
 #include <iostream>
 #include "strlib.h"
