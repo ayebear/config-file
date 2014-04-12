@@ -11,67 +11,65 @@ namespace cfg
 
 File::File()
 {
-    resetSettings();
+    setFlags();
 }
 
-File::File(const string& filename)
+File::File(const std::string& filename, int newFlags)
 {
-    resetSettings();
+    setFlags(newFlags);
     loadFromFile(filename);
 }
 
-File::File(const ConfigMap& defaultOptions, bool warnings)
+File::File(const ConfigMap& defaultOptions, int newFlags)
 {
-    resetSettings();
-    showWarnings = warnings;
+    setFlags(newFlags);
     setDefaultOptions(defaultOptions);
 }
 
-File::File(const string& filename, const ConfigMap& defaultOptions, bool warnings)
+File::File(const std::string& filename, const ConfigMap& defaultOptions, int newFlags)
 {
-    resetSettings();
-    showWarnings = warnings;
+    setFlags(newFlags);
     setDefaultOptions(defaultOptions);
     loadFromFile(filename);
 }
 
 File::~File()
 {
-    if (autosave)
+    if (flags & Autosave)
         writeToFile();
 }
 
-bool File::loadFromFile(const string& filename)
+bool File::loadFromFile(const std::string& filename)
 {
-    bool status = false;
     configFilename = filename;
-    std::vector<string> lines;
-    if (strlib::readLinesFromFile(configFilename, lines, false))
-    {
+    std::vector<std::string> lines;
+    fileIoSuccessful = strlib::readLinesFromFile(configFilename, lines, false);
+    if (fileIoSuccessful)
         parseLines(lines);
-        status = true;
-    }
-    else if (showWarnings)
+    else if (flags & Errors)
         std::cout << "Error loading \"" << configFilename << "\"\n";
-    return status;
+    return fileIoSuccessful;
 }
 
-void File::loadFromString(const string& str)
+void File::loadFromString(const std::string& str)
 {
-    std::vector<string> lines;
+    std::vector<std::string> lines;
     strlib::getLinesFromString(str, lines, false);
     parseLines(lines);
 }
 
-bool File::writeToFile(string filename) const
+bool File::writeToFile(std::string filename) const
 {
     if (filename.empty())
         filename = configFilename;
-    // Write the string to the output file
-    return strlib::writeStringToFile(filename, buildString());
+    // Write the std::string to the output file
+    fileIoSuccessful = strlib::writeStringToFile(filename, buildString());
+    if (!fileIoSuccessful && (flags & Errors))
+        std::cout << "Error writing \"" << configFilename << "\"\n";
+    return fileIoSuccessful;
 }
 
-void File::writeToString(string& str) const
+void File::writeToString(std::string& str) const
 {
     for (const auto& section: options) // Go through all of the sections
     {
@@ -85,46 +83,48 @@ void File::writeToString(string& str) const
         str.pop_back(); // Strip the extra new line at the end
 }
 
-string File::buildString() const
+std::string File::buildString() const
 {
-    string configStr;
+    std::string configStr;
     writeToString(configStr);
     return configStr;
 }
 
-void File::setShowWarnings(bool setting)
+File::operator bool() const
 {
-    showWarnings = setting;
+    return fileIoSuccessful;
 }
 
-void File::setAutosave(bool setting)
+void File::setFlag(int flag, bool state)
 {
-    autosave = setting;
+    if (state)
+        flags |= flag;
+    else
+        flags &= ~flag;
 }
 
-void File::resetSettings()
+void File::setFlags(int newFlags)
 {
-    showWarnings = false;
-    autosave = false;
+    flags = newFlags;
 }
 
-Option& File::operator()(const string& name, const string& section)
+Option& File::operator()(const std::string& name, const std::string& section)
 {
     return options[section][name];
 }
 
-Option& File::operator()(const string& name)
+Option& File::operator()(const std::string& name)
 {
     return options[currentSection][name];
 }
 
-bool File::optionExists(const string& name, const string& section) const
+bool File::optionExists(const std::string& name, const std::string& section) const
 {
     auto sectionFound = options.find(section);
     return (sectionFound != options.end() && sectionFound->second.find(name) != sectionFound->second.end());
 }
 
-bool File::optionExists(const string& name) const
+bool File::optionExists(const std::string& name) const
 {
     return optionExists(name, currentSection);
 }
@@ -134,7 +134,7 @@ void File::setDefaultOptions(const ConfigMap& defaultOptions)
     options.insert(defaultOptions.begin(), defaultOptions.end());
 }
 
-void File::useSection(const string& section)
+void File::useSection(const std::string& section)
 {
     currentSection = section;
 }
@@ -149,7 +149,7 @@ File::ConfigMap::iterator File::end()
     return options.end();
 }
 
-File::Section& File::getSection(const string& section)
+File::Section& File::getSection(const std::string& section)
 {
     return options[section];
 }
@@ -159,7 +159,7 @@ File::Section& File::getSection()
     return options[currentSection];
 }
 
-bool File::sectionExists(const string& section) const
+bool File::sectionExists(const std::string& section) const
 {
     return (options.find(section) != options.end());
 }
@@ -169,7 +169,7 @@ bool File::sectionExists() const
     return sectionExists(currentSection);
 }
 
-bool File::eraseOption(const string& name, const string& section)
+bool File::eraseOption(const std::string& name, const std::string& section)
 {
     bool status = false;
     auto sectionFound = options.find(section);
@@ -178,12 +178,12 @@ bool File::eraseOption(const string& name, const string& section)
     return status;
 }
 
-bool File::eraseOption(const string& name)
+bool File::eraseOption(const std::string& name)
 {
     return eraseOption(name, currentSection);
 }
 
-bool File::eraseSection(const string& section)
+bool File::eraseSection(const std::string& section)
 {
     return (options.erase(section) > 0);
 }
@@ -198,14 +198,14 @@ void File::clear()
     options.clear();
 }
 
-void File::parseLines(std::vector<string>& lines)
+void File::parseLines(std::vector<std::string>& lines)
 {
     currentArrayStack.clear();
     arrayOptionName.clear();
-    string section;
+    std::string section;
     bool multiLineComment = false;
     Comment commentType = Comment::None;
-    for (string& line: lines) // Iterate through the std::vector of strings
+    for (std::string& line: lines) // Iterate through the std::vector of strings
     {
         strlib::trimWhitespace(line);
         commentType = stripComments(line, multiLineComment);
@@ -226,18 +226,18 @@ void File::parseLines(std::vector<string>& lines)
     }
 }
 
-bool File::isSection(const string& section) const
+bool File::isSection(const std::string& section) const
 {
     return (section.size() >= 2 && section.front() == '[' && section.back() == ']');
 }
 
-void File::parseSectionLine(const string& line, string& section)
+void File::parseSectionLine(const std::string& line, std::string& section)
 {
     section = line.substr(1, line.size() - 2); // Set the current section
     options[section]; // Add that section to the map
 }
 
-void File::parseOptionLine(const string& line, const string& section)
+void File::parseOptionLine(const std::string& line, const std::string& section)
 {
     if (!currentArrayStack.empty())
     {
@@ -246,7 +246,7 @@ void File::parseOptionLine(const string& line, const string& section)
         // 1. { (array start)
         // 2. X (another value)
         // 3. } (array end)
-        string value = line;
+        std::string value = line;
         strlib::trimWhitespace(value);
         if (value.back() == ',')
             value.pop_back();
@@ -266,9 +266,9 @@ void File::parseOptionLine(const string& line, const string& section)
     {
         // Process a regular option line (or the start of a new array)
         size_t equalPos = line.find("="); // Find the position of the "=" symbol
-        if (equalPos != string::npos && equalPos >= 1) // Ignore the line if there is no "=" symbol
+        if (equalPos != std::string::npos && equalPos >= 1) // Ignore the line if there is no "=" symbol
         {
-            string name, value;
+            std::string name, value;
             // Extract the name and value
             name = line.substr(0, equalPos);
             value = line.substr(equalPos + 1);
@@ -284,7 +284,7 @@ void File::parseOptionLine(const string& line, const string& section)
             }
             else
             {
-                if (!setOption(option, value) && showWarnings)
+                if (!setOption(option, value) && (flags & Warnings))
                 {
                     std::cout << "Warning: Option \"" << name << "\" in [" << section << "] was out of range.\n";
                     std::cout << "    Using default value: " << option.toStringWithQuotes() << std::endl;
@@ -294,9 +294,9 @@ void File::parseOptionLine(const string& line, const string& section)
     }
 }
 
-bool File::setOption(Option& option, const string& value)
+bool File::setOption(Option& option, const std::string& value)
 {
-    string trimmedValue = value;
+    std::string trimmedValue = value;
     bool trimmedQuotes = strlib::trimQuotes(trimmedValue); // Remove quotes if any
     bool optionSet = (option = trimmedValue); // Try to set the option
     if (trimmedQuotes) // If quotes were removed
@@ -304,7 +304,7 @@ bool File::setOption(Option& option, const string& value)
     return optionSet;
 }
 
-Option& File::getArrayOption(const string& section, const string& name)
+Option& File::getArrayOption(const std::string& section, const std::string& name)
 {
     Option* currentOption = &options[section][name];
     // Start at 1, because the 0th element represents the current option above
@@ -319,15 +319,15 @@ void File::startArray(Option& option)
     currentArrayStack.push_back(option.size() - 1);
 }
 
-bool File::isEndComment(const string& str) const
+bool File::isEndComment(const std::string& str) const
 {
-    return (str.find("*/") != string::npos);
+    return (str.find("*/") != std::string::npos);
 }
 
-File::Comment File::getCommentType(const string& str, bool checkEnd) const
+File::Comment File::getCommentType(const std::string& str, bool checkEnd) const
 {
     // Comment symbols and types
-    static const std::vector<string> commentSymbols = {"/*", "//", "#", "::", ";"};
+    static const std::vector<std::string> commentSymbols = {"/*", "//", "#", "::", ";"};
     static const std::vector<Comment> commentTypes = {Comment::Start, Comment::Single, Comment::Single, Comment::Single, Comment::Single};
 
     Comment commentType = Comment::None;
@@ -350,7 +350,7 @@ File::Comment File::getCommentType(const string& str, bool checkEnd) const
     return commentType;
 }
 
-File::Comment File::stripComments(string& str, bool checkEnd)
+File::Comment File::stripComments(std::string& str, bool checkEnd)
 {
     Comment commentType = getCommentType(str, checkEnd);
     if (commentType == Comment::Single)

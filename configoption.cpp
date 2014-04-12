@@ -122,6 +122,11 @@ char Option::toChar() const
     return static_cast<char>(number);
 }
 
+Option::operator const std::string&() const
+{
+    return str;
+}
+
 void Option::setQuotes(bool setting)
 {
     quotes = setting;
@@ -190,6 +195,16 @@ Option::OptionVector::iterator Option::begin()
 }
 
 Option::OptionVector::iterator Option::end()
+{
+    return options->end();
+}
+
+Option::OptionVector::const_iterator Option::begin() const
+{
+    return options->begin();
+}
+
+Option::OptionVector::const_iterator Option::end() const
 {
     return options->end();
 }

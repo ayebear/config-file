@@ -1,4 +1,4 @@
-ConfigFile - Configuration file class
+ConfigFile - Configuration file library
 
 Copyright (C) 2014 Eric Hebert (ayebear)
 

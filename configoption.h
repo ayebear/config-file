@@ -44,6 +44,8 @@ class Option
         // This will try to cast the decimal to another type
         template <typename Type> Type to() const;
 
+        operator const std::string&() const;
+
         // For determining if the option was originally read in as a string with quotes
         void setQuotes(bool setting);
         bool hasQuotes();
@@ -62,6 +64,8 @@ class Option
         void clear();
         OptionVector::iterator begin();
         OptionVector::iterator end();
+        OptionVector::const_iterator begin() const;
+        OptionVector::const_iterator end() const;
 
         // Arrays as strings
         std::string buildArrayString(const std::string& indentStr = "") const; // Returns the array in string format
