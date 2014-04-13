@@ -1,7 +1,7 @@
 ConfigFile
 ==========
 
-This C++11 class reads simple configuration files, which can be used in all kinds of software. You can even modify and save configuration files, or you can simply use it to read user settings.
+This C++11 library reads simple configuration files, which can be used in all kinds of software. You can even modify and save configuration files, or you can simply use it to read user settings.
 
 The main purpose of this project is to have a simple file format which can be used extremely easily in code, and so that users can easily modify these files without worrying about a lot of syntax. This is a very loose format, which ignores whitespace, and has dynamic data-types.
 
@@ -79,8 +79,8 @@ Features (file format)
 * Extra whitespace is ignored around mostly everything.
   * New lines still have meaning though.
 
-Features (class)
-----------------
+Features (classes)
+------------------
 
 * Can load/save from/to either a file or string
   * Can automatically save the file on object destruction
@@ -122,7 +122,237 @@ Arrays
 
 Arrays are fully dynamic and jagged, meaning you can have arrays within arrays with more arrays (and so on). Each element of the array can be an Option, or another array of Option objects. In memory they are stored as a type of tree structure. They are stored inside of the Option class just like all of the other types.
 
-### Reading values
+#### Example file with array:
+```
+colors = {
+    "Red",
+    "Blue",
+    "Green",
+    "Yellow"
+}
+```
+See example array uses below for more information.
+
+Sections
+--------
+
+* "Sections" can help to organize or separate options
+* If you use sections in your code, then they must be specified correctly, in order for options
+    to be distinguished from options in other sections.
+* If no sections are used, a default section is used, which is just an empty string.
+  * This also applies to options in the beginning of the file before any section headers.
+  * Specifying an empty string section with "[]" would have the same behavior as using no section.
+  * You can even use "" as a section in your code which refers to the default section.
+    * Note that this differs from the current section.
+
+#### Example file with sections:
+```
+[SomeSection]
+option = value
+anotherOption = 123
+
+[AnotherSection]
+option = 5000
+```
+So "option" will be read as "value" in SomeSection, but 5000 in AnotherSection.
+Also, "anotherOption" only exists in SomeSection, so you will not get its value with AnotherSection.
+
+Comments
+--------
+
+* Comments can be made with most symbols (//, #, ::, and ;)
+* Comments MUST be on their own lines
+  * The symbols are checked only in the beginning of each line
+  * The whole line is ignored if it is a comment
+* Multi-line comments are also supported with /* and */
+* Currently, writing configuration files removes all comments. This will be changed in the future.
+
+Example usage of classes
+------------------------
+
+You can create cfg::File objects, which can load/save configuration files. Loading one will actually keep an in-memory std::map of all of the options, so accessing/changing/creating options in your program will be fast. Then, if you want to, you can write the changes back into the same file or into a new file.
+
+### Loading/saving configuration files
+
+#### Loading files
+```
+// First, you will need to include the header file:
+#include "configfile.h"
+
+// Load a configuration file:
+cfg::File config("sample.cfg");
+if (!config)
+{
+    // Error loading
+}
+
+// Or you can load it after you construct the object:
+cfg::File config;
+if (!config.loadFromFile("sample.cfg"))
+{
+    // Error loading
+}
+```
+
+#### Saving files
+```
+// Save to a file:
+cfg::File config;
+if (!config.writeToFile("saved.cfg"))
+{
+    // Error saving
+}
+
+// Another way is to just save the last loaded file:
+cfg::File config("sample.cfg");
+if (!config.writeToFile())
+{
+    // Error saving
+}
+
+// You can also enable the Autosave flag, as shown in "Loading with flags".
+```
+
+#### Loading with default options
+```
+// You can also specify default options:
+const cfg::File::ConfigMap defaultOptions = {
+{"ExampleSection", {
+    {"someOption", cfg::makeOption(false)},
+    {"pi", cfg::makeOption(3.14159265358979)},
+    {"name", cfg::makeOption("Test")},
+    {"percent", cfg::makeOption(0, 0, 100)}
+}}};
+// Load a file using those default options:
+cfg::File config("sample.cfg", defaultOptions);
+// If any of those options do not exist in the file, the defaults will be used.
+```
+
+#### Loading with flags
+
+Currently, there are three flags:
+
+* Warnings (Print messages when options are out of range)
+* Errors (Print errors when loading/saving files)
+* Autosave (Automatically save the last file loaded on destruction)
+
+By default, all of these are disabled. You can enable these flags like so:
+```
+cfg::File config("sample.cfg", cfg::File::Autosave);
+// Now when config goes out of scope, it will automatically be saved.
+
+// Same as above:
+cfg::File config("sample.cfg");
+config.setFlags(cfg::File::Autosave);
+// The last parameter in the constructor is passed to setFlags().
+
+// You can enable multiple flags like this:
+cfg::File config("sample.cfg", cfg::File::Autosave | cfg::File::Errors);
+
+// Or just enable all of them:
+cfg::File config("sample.cfg", cfg::File::AllFlags);
+
+// You can enable/disable specific flags later on:
+config.setFlag(cfg::File::Errors, true); // Enable
+config.setFlag(cfg::File::Errors, false); // Disable
+config.setFlag(cfg::File::Errors); // Easier way to enable
+```
+Note that "setFlags" will reset all of the flags to what is specified, while "setFlag" will only modify the flag that is specified.
+
+### Manipulating options
+
+#### Option ranges
+
+Notice in the previous example, there were three parameters used in cfg::makeOption(). The parameters are as follows:
+
+* Default value (required)
+* Minimum value (optional)
+* Maximum value (optional)
+
+Whenever a value in the configuration file is loaded or an option is being set in your program, it will only be set if the value is within that range. Assuming the above code is included, here is an example:
+
+```
+config.useSection("ExampleSection"); // Use the correct section
+config("percent") = 50; // OK, value is in range
+config("percent") = 9000; // Not set, because value is out of range
+// "percent" ends up as 50
+```
+Note: Currently, only numeric ranges are supported. Anything more advanced should be done in code where the options are read in.
+
+#### Reading options
+```
+// Read an option as an int:
+int someNumber = config("someNumber").toInt();
+// Notice the .toInt() above. This is because using operator() returns
+// a reference to a cfg::Option object, which can be read as different types.
+// Some other types that it can be read as:
+std::string str = config("someString").toString();
+double dec = config("someDouble").toDouble();
+bool someBool = config("someBool").toBool();
+// You can also get the option as almost any value that can cast from a double:
+auto someValue = config("someOption").to<unsigned short>();
+```
+
+#### Modifying options
+```
+config("someNumber") = 200;
+// Options can be set to values of different types:
+config("someNumber") = 3.14159;
+config("someNumber") = "Some string";
+config("someNumber") = true;
+```
+
+#### Accessing options with sections
+```
+// The second parameter of operator() is the section to use:
+config("test", "NewSection") = 5;
+// You can alternatively set the current section to use by default:
+config.useSection("NewSection");
+// So that this section will be used when nothing is specified:
+config("test") = 5;
+// Both will set "test" in "NewSection" to 5.
+```
+
+#### Iterating through cfg::File
+
+If you need to access options/sections in a config file, without knowing the names, you can do so by iterating through it.
+
+To iterate through the sections:
+```
+cfg::File config("sample.cfg");
+for (auto& section: config)
+{
+    cout << "Section name: " << section.first << endl;
+    // "section.second" contains the contents of the section
+    // The type of section.second is cfg::File::Section, or std::map<std::string, cfg::Option>
+}
+```
+
+To iterate through all of the options in every section:
+```
+cfg::File config("sample.cfg");
+for (auto& section: config)
+{
+    for (auto& option: section)
+    {
+        // option.first contains the name of the option
+        cout << "Option name: " << option.first << endl;
+        // option.second contains the cfg::Option object
+        cout << "Option value: " << option.second << endl;
+    }
+}
+```
+
+To iterate through all of the options in a specific section:
+```
+cfg::File config("sample.cfg");
+for (auto& option: config.getSection("SpecificSection"))
+    // Same as above example
+```
+
+### Using arrays
+
+#### Reading values
 
 sample.cfg
 ```
@@ -136,16 +366,16 @@ colors = {
 
 Print the 3rd color (green):
 ```
-std::cout << colors[2] << std::endl;
+cfg::File config("sample.cfg");
+std::cout << config("colors")[2] << std::endl;
+// Note: Arrays are 0-based.
 // Note: The << operator is overloaded and just calls toString().
 ```
 
-You can loop through the array like so:
+You can iterate through the array like so:
 ```
-// Load the file
 cfg::File config("sample.cfg");
-
-// Loop through and print the elements
+// Print all of the elements
 for (auto& col: config("colors"))
     std::cout << col << std::endl;
 ```
@@ -169,7 +399,7 @@ stuff = {
     }
 }
 ```
-You can loop through the jagged array like so:
+You can iterate through the jagged array like so:
 ```
 cfg::File config("sample2.cfg");
 for (auto& arr: config("stuff"))
@@ -177,20 +407,20 @@ for (auto& arr: config("stuff"))
         std::cout << elem << std::endl;
 ```
 
-### Modifying values
+#### Modifying values
 
 To add/remove options from arrays, you can use the push and pop methods in the Option class.
 ```
 // This can also be an option from a cfg::File object
 Option test;
 
-// push takes an option object
+// push() takes an option object
 test.push(cfg::makeOption("Some text"));
 
 // A blank Option will be added if nothing is passed in
 test.push();
 
-// push also returns a reference to the newly added option object
+// push() also returns a reference to the newly added option object
 test.push() = "Some more text";
 test.push().push().push();
 
@@ -219,139 +449,4 @@ test.back() = 45.67;
 test[2].push() = "I'm in an array inside of another array"
 ```
 
-Sections
---------
-
-* You can also have "sections", which are optional to use with code that uses this class.
-* If you use sections in your code, then they must be specified correctly, in order for options
-    to be distinguished from other options in other sections.
-* If no sections are used, a default section is used which is just an empty string.
-  * This also applies to options in the beginning of the file before any section headers.
-  * Specifying an empty string section with "[]" would have the same behavior as using no section.
-  * You can even use "" as a section in your code which refers to the default section.
-    * Notice that this is used as the default value for the section string parameters.
-
-Sections example:
-```
-[SomeSection]
-option = value
-anotherOption = 123
-
-[AnotherSection]
-option = 5000
-```
-So "option" will be read as "value" in SomeSection, but 5000 in AnotherSection.
-Also, "anotherOption" only exists in SomeSection, so you will not get its value with AnotherSection.
-
-Comments
---------
-
-* Comments can be made with most symbols (//, #, ::, and ;)
-* Comments MUST be on their own lines
-  * The symbols are checked only in the beginning of each line
-  * The whole line is ignored if it is a comment
-* Multi-line comments are also supported with /* and */
-
-Example usage of classes
-------------------------
-
-You can create cfg::File objects, which can load/save configuration files. Loading one will actually keep an in-memory std::map of all of the options, so accessing/changing/creating options in your program will be fast. Then, if you want to, you can write the changes back into the same file or into a new file.
-
-### Loading/saving configuration files
-
-#### Loading files
-```
-// First, you will need to include the header file:
-#include "configfile.h"
-
-// Load a configuration file:
-cfg::File config("sample.cfg");
-// Or you can load it after you construct the object:
-cfg::File config;
-config.loadFromFile("sample.cfg");
-```
-
-#### Saving files
-```
-// Save to a file:
-cfg::File config;
-/* ... */
-config.writeToFile("saved.cfg");
-
-// Another way is to just save the last loaded file:
-cfg::File config("sample.cfg");
-/* ... */
-config.writeToFile();
-```
-
-#### Loading with default options
-```
-// You can also specify default options:
-const cfg::File::ConfigMap defaultOptions = {
-{"ExampleSection", {
-    {"someOption", cfg::makeOption(false)},
-    {"pi", cfg::makeOption(3.14159265358979)},
-    {"name", cfg::makeOption("Test")},
-    {"percent", cfg::makeOption(0, 0, 100)}
-}}};
-// Load a file using those default options:
-cfg::File config("sample.cfg", defaultOptions);
-// If any of those options do not exist in the file, the defaults will be used.
-```
-
-### Manipulating options
-
-#### Option ranges
-
-Notice in the previous example, there were three parameters used in cfg::makeOption(). The parameters are as follows:
-
-* Default value (required)
-* Minimum value (optional)
-* Maximum value (optional)
-
-Whenever a value in the configuration file is loaded or an option is being set in your program, it will only be set if the value is within that range. Assuming the above code is included, here is an example:
-
-```
-config.useSection("ExampleSection"); // Use the correct section
-config("percent") = 50; // OK, value is in range
-config("percent") = 9000; // Not set, because value is out of range
-// "percent" ends up as 50
-```
-
-#### Reading options
-```
-// Read an option as an int:
-int someNumber = config("someNumber").toInt();
-// Notice the .toInt() above. This is because using operator() returns
-// a reference to a cfg::Option object, which can be read as different types.
-// Some other types that it can be read as:
-std::string str = config("someString").toString();
-double dec = config("someDouble").toDouble();
-bool someBool = config("someBool").toBool();
-// You can also get the option as almost any value that can cast from a double:
-auto someValue = config("someOption").to<unsigned short>();
-```
-
-#### Setting options
-```
-// Modifying options:
-config("someNumber") = 200;
-// Options can be set to values of different types:
-config("someNumber") = 3.14159;
-config("someNumber") = "Some string";
-config("someNumber") = true;
-```
-
-#### Accessing options with sections
-```
-// Sections:
-// The second parameter of operator() is the section to use:
-config("test", "NewSection") = 5;
-// You can alternatively set the current section to use by default:
-config.useSection("NewSection");
-// So that this section will be used when nothing is specified:
-config("test") = 5;
-// Both will set "test" in "NewSection" to 5.
-```
-
-For more ways of using the cfg::File and cfg::Option classes, please refer to the header files.
+For more ways of using the cfg::File and cfg::Option classes, please refer to the header files. There are comments that have information about what everything does.
