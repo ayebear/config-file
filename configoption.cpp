@@ -6,6 +6,8 @@
 namespace cfg
 {
 
+Option::OptionVector Option::emptyVector;
+
 Option::Option():
     str(),
     number(0),
@@ -191,22 +193,30 @@ void Option::clear()
 
 Option::OptionVector::iterator Option::begin()
 {
-    return options->begin();
+    if (options)
+        return options->begin();
+    return emptyVector.begin();
 }
 
 Option::OptionVector::iterator Option::end()
 {
-    return options->end();
+    if (options)
+        return options->end();
+    return emptyVector.end();
 }
 
 Option::OptionVector::const_iterator Option::begin() const
 {
-    return options->begin();
+    if (options)
+        return options->begin();
+    return emptyVector.begin();
 }
 
 Option::OptionVector::const_iterator Option::end() const
 {
-    return options->end();
+    if (options)
+        return options->end();
+    return emptyVector.end();
 }
 
 std::string Option::buildArrayString(const std::string& indentStr) const

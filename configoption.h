@@ -100,6 +100,9 @@ class Option
         // Also, this is only created when push() is called for the first time
         // Also, this array is separate from the option itself, and nothing is kept in sync
             // This means that the first element can be different from the option.
+
+        static OptionVector emptyVector;
+        // This is used for returning iterators when the array isn't allocated
 };
 
 template <typename Type>

@@ -19,6 +19,7 @@ See README.md for more information.
 TODO:
     Handle escape codes inside of strings.
     Handle multiple array elements on the same line.
+    Support sub-sections by using a tree, similar to Option arrays.
     Writing should optionally preserve formatting and comments.
 */
 class File
