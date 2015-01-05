@@ -52,6 +52,7 @@ class File
         void writeToString(std::string& str) const; // Saves current options to a string (same format as writeToFile)
         std::string buildString() const; // Returns a string of the current options (same format as writeToFile)
         explicit operator bool() const; // Returns true if the last file loaded/saved successfully
+        bool getStatus() const; // Returns true if the last file loaded/saved successfully
 
         // Settings
         void setFlag(int flag, bool state = true);

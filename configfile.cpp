@@ -95,6 +95,11 @@ File::operator bool() const
     return fileIoSuccessful;
 }
 
+bool File::getStatus() const
+{
+    return fileIoSuccessful;
+}
+
 void File::setFlag(int flag, bool state)
 {
     if (state)
