@@ -11,14 +11,28 @@
 namespace strlib
 {
 
+/*
+TODO:
+    Clean these up, add parameter names, move comments
+    Make everything consistent, whether it returns something or modifies something
+    Make split so it returns a vector instead
+    Simplify everything
+    Use proper idioms and more efficient ways to do things
+    Move specific code (like boolean stuff) to config file
+    Separate this from the config file code, maybe make another git repo
+*/
+
 // String manipulation
 void trimWhitespace(std::string&); // Trims all whitespace on both sides of the string
 bool trimQuotes(std::string&); // Trims quotes on ends of string, returns true if the string was modified
 void stripNewLines(std::string&); // Removes all new lines/carriage returns from a string
+
 unsigned replaceAll(std::string&, const std::string&, const std::string&); // Replaces all instances of a sub-string with another string, and returns the number of replaces
 void split(const std::string&, const std::string&, std::vector<std::string>&, bool = true); // Splits a string into a vector of strings with a delimeter
+
 std::string toLower(std::string); // Creates an all-lowercase version of the passed in string
 bool areQuotes(char, char); // Returns true if both characters are either single or double quotes
+
 bool mustEndWith(std::string&, const std::string&); // Appends the second string if the first doesn't end with it
 
 // File operations
@@ -45,6 +59,33 @@ template <typename T>
 std::string toString(bool data)
 {
     return (data ? "true" : "false");
+}
+
+// Converts a string to most types
+template <typename T>
+T fromString(const std::string& str, T defaultValue = 0)
+{
+    T val = defaultValue;
+    std::istringstream stream(str);
+    stream >> val;
+    return val;
+}
+
+// Splits a string using a delimeter, parses each value as the specified type,
+// then returns a vector of the elements.
+template <typename T>
+std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue = 0)
+{
+    // Split the string into a vector of strings
+    std::vector<std::string> strs;
+    split(str, delim, strs);
+
+    // Parse the values into a vector of the specified type
+    std::vector<T> values;
+    values.reserve(strs.size());
+    for (auto& s: strs)
+        values.push_back(fromString<T>(s, defaultValue));
+    return values;
 }
 
 }
