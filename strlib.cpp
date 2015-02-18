@@ -73,6 +73,13 @@ void split(const std::string& inStr, const std::string& delim, std::vector<std::
         outVec.push_back(inStr.substr(start, inStr.size()));
 }
 
+std::vector<std::string> split(const std::string& str, const std::string& delim)
+{
+    std::vector<std::string> elements;
+    split(str, delim, elements, true);
+    return elements;
+}
+
 std::string toLower(std::string str)
 {
     // Make all of the characters lowercase

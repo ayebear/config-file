@@ -29,6 +29,7 @@ void stripNewLines(std::string&); // Removes all new lines/carriage returns from
 
 unsigned replaceAll(std::string&, const std::string&, const std::string&); // Replaces all instances of a sub-string with another string, and returns the number of replaces
 void split(const std::string&, const std::string&, std::vector<std::string>&, bool = true); // Splits a string into a vector of strings with a delimeter
+std::vector<std::string> split(const std::string& str, const std::string& delim); // Simplified version of above
 
 std::string toLower(std::string); // Creates an all-lowercase version of the passed in string
 bool areQuotes(char, char); // Returns true if both characters are either single or double quotes
