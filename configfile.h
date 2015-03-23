@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #ifndef CFG_FILE_H
 #define CFG_FILE_H
@@ -95,10 +95,11 @@ class File
         bool isSection(const std::string& section) const; // Returns true if the line is a section header
         void parseSectionLine(const std::string& line, std::string& section); // Processes a section header line and adds a section to the map
         void parseOptionLine(const std::string& line, const std::string& section); // Processes an option line and adds an option to the map
-        //void setOption(const std::string& section, const std::string& name, const std::string& value); // Adds or sets an option
         bool setOption(Option& option, const std::string& value); // Sets an existing option
         Option& getArrayOption(const std::string& section, const std::string& name); // Returns an option at the current array level
         void startArray(Option& option); // Starts another array when "{" is found
+        bool areQuotes(char c1, char c2); // Returns true if both characters are either single or double quotes
+        bool trimQuotes(std::string& str); // Trims quotes on ends of string, returns true if the string was modified
 
         // Comment handling
         bool isEndComment(const std::string& str) const; // Returns true if it contains a multiple-line end comment symbol

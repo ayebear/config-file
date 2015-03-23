@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #ifndef STRLIB_H
 #define STRLIB_H
@@ -11,39 +11,54 @@
 namespace strlib
 {
 
-/*
-TODO:
-    Clean these up, add parameter names, move comments
-    Make everything consistent, whether it returns something or modifies something
-    Make split so it returns a vector instead
-    Simplify everything
-    Use proper idioms and more efficient ways to do things
-    Move specific code (like boolean stuff) to config file
-    Separate this from the config file code, maybe make another git repo
-*/
+/// String manipulation =======================================================
 
-// String manipulation
-void trimWhitespace(std::string&); // Trims all whitespace on both sides of the string
-bool trimQuotes(std::string&); // Trims quotes on ends of string, returns true if the string was modified
-void stripNewLines(std::string&); // Removes all new lines/carriage returns from a string
+// Trims all whitespace on both sides of the string
+void trimWhitespace(std::string& str);
 
-unsigned replaceAll(std::string&, const std::string&, const std::string&); // Replaces all instances of a sub-string with another string, and returns the number of replaces
-void split(const std::string&, const std::string&, std::vector<std::string>&, bool = true); // Splits a string into a vector of strings with a delimeter
-std::vector<std::string> split(const std::string& str, const std::string& delim); // Simplified version of above
+// Removes all new lines and carriage returns from a string
+void stripNewLines(std::string& str);
 
-std::string toLower(std::string); // Creates an all-lowercase version of the passed in string
-bool areQuotes(char, char); // Returns true if both characters are either single or double quotes
+// Creates an all-lowercase version of the passed in string
+std::string toLower(const std::string& str);
 
-bool mustEndWith(std::string&, const std::string&); // Appends the second string if the first doesn't end with it
+// Creates an all-uppercase version of the passed in string
+std::string toUpper(const std::string& str);
 
-// File operations
-void getLinesFromString(std::string, std::vector<std::string>&, bool = true); // Splits a string into separate lines with CR and/or LF characters
-bool readLinesFromFile(const std::string&, std::vector<std::string>&, bool = true); // Simply reads a file into memory in separate lines
-bool writeStringToFile(const std::string&, const std::string&); // Writes a string to a file, will overwrite an existing file
+// Appends the second string if the first doesn't end with it
+bool mustEndWith(std::string& str, const std::string& endStr);
 
-// String converting
-bool strToBool(const std::string&); // Parses a string to determine its boolean value
-bool isBool(const std::string&); // Determines if a string is either "true" or "false"
+// Replaces all instances of a sub-string with another string, and returns the number of replaces
+size_t replaceAll(std::string& str, const std::string& findStr, const std::string& replaceStr);
+
+// Splits a string into a vector of strings using a delimeter string
+std::vector<std::string> split(const std::string& str, const std::string& delim);
+
+// Splits a string using a delimeter, parses each value as the specified type,
+// then returns a vector of the elements.
+template <typename T>
+std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue = 0);
+
+
+/// File operations ===========================================================
+
+// Splits a string into separate lines using the CR and/or LF characters
+std::vector<std::string> getLinesFromString(const std::string& str);
+
+// Reads a file into a vector as separate lines
+bool readLinesFromFile(const std::string& filename, std::vector<std::string>& lines);
+
+// Writes a string to a file, will overwrite an existing file
+bool writeStringToFile(const std::string& filename, const std::string& data);
+
+
+/// String converting =========================================================
+
+// Parses a string to determine its boolean value
+bool strToBool(const std::string& str);
+
+// Determines if a string is either "true" or "false"
+bool isBool(const std::string& str);
 
 // Converts most types to strings using a string stream
 template <typename T>
@@ -66,20 +81,17 @@ std::string toString(bool data)
 template <typename T>
 T fromString(const std::string& str, T defaultValue = 0)
 {
-    T val = defaultValue;
+    T val{defaultValue};
     std::istringstream stream(str);
     stream >> val;
     return val;
 }
 
-// Splits a string using a delimeter, parses each value as the specified type,
-// then returns a vector of the elements.
 template <typename T>
-std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue = 0)
+std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue)
 {
     // Split the string into a vector of strings
-    std::vector<std::string> strs;
-    split(str, delim, strs);
+    auto strs = split(str, delim);
 
     // Parse the values into a vector of the specified type
     std::vector<T> values;

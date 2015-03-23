@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #include "configoption.h"
 
@@ -8,26 +8,12 @@ namespace cfg
 
 Option::OptionVector Option::emptyVector;
 
-Option::Option():
-    str(),
-    number(0),
-    decimal(0),
-    logical(false),
-    quotes(false),
-    range(NoRange),
-    rangeMin(0),
-    rangeMax(0)
-{
-}
-
-Option::Option(const std::string& data):
-    Option()
+Option::Option(const std::string& data)
 {
     setString(data);
 }
 
-Option::Option(const Option& data):
-    Option()
+Option::Option(const Option& data)
 {
     operator=(data);
 }
@@ -36,6 +22,7 @@ void Option::reset()
 {
     quotes = false;
     range = NoRange;
+    options.reset();
     operator=(0);
 }
 
@@ -60,7 +47,7 @@ Option& Option::operator=(const Option& data)
     rangeMin = data.rangeMin;
     rangeMax = data.rangeMax;
     if (data.options)
-        options.reset(new OptionVector(*data.options));
+        options = std::make_unique<OptionVector>(*data.options);
     else
         options.reset();
     return *this;
@@ -68,15 +55,19 @@ Option& Option::operator=(const Option& data)
 
 bool Option::setString(const std::string& data)
 {
-    std::istringstream tmpStream(data);
-    double tmpDec = 0;
-    bool parsedNumber = (tmpStream >> tmpDec); // Try reading a number from the string
-    if (isInRange(tmpDec)) // Check if the number is in range
+    std::istringstream stream(data);
+    double value{};
+
+    // Try to parse a value from the string
+    bool success = (stream >> value) && (static_cast<size_t>(stream.gcount()) == data.size());
+
+    // Only set the value if it's in range
+    if (isInRange(value))
     {
-        decimal = tmpDec; // Set the decimal from the temporary one
+        decimal = value; // Set the decimal from the temporary one
         number = decimal; // Truncate to an int
-        quotes = !(parsedNumber || strlib::isBool(data)); // No quotes around a number or a boolean
-        logical = (parsedNumber ? (decimal != 0) : strlib::strToBool(data)); // Convert to a boolean
+        quotes = !(success || strlib::isBool(data)); // No quotes around a number or a boolean
+        logical = (success ? (decimal != 0) : strlib::strToBool(data)); // Convert to a boolean
         str = data; // Set the string
         return true;
     }
@@ -160,7 +151,7 @@ void Option::removeRange()
 Option& Option::push(const Option& opt)
 {
     if (!options)
-        options.reset(new OptionVector());
+        options = std::make_unique<OptionVector>();
     options->push_back(opt);
     return options->back();
 }
@@ -205,18 +196,18 @@ Option::OptionVector::iterator Option::end()
     return emptyVector.end();
 }
 
-Option::OptionVector::const_iterator Option::begin() const
+Option::OptionVector::const_iterator Option::cbegin() const
 {
     if (options)
-        return options->begin();
-    return emptyVector.begin();
+        return options->cbegin();
+    return emptyVector.cbegin();
 }
 
-Option::OptionVector::const_iterator Option::end() const
+Option::OptionVector::const_iterator Option::cend() const
 {
     if (options)
-        return options->end();
-    return emptyVector.end();
+        return options->cend();
+    return emptyVector.cend();
 }
 
 std::string Option::buildArrayString(const std::string& indentStr) const
@@ -241,25 +232,6 @@ std::string Option::buildArrayString(const std::string& indentStr) const
     else
         return toStringWithQuotes();
 }
-
-// Might be better to have the options themselves handle parsing the array strings.
-// Then it could return the current size of the "array stack", so that ConfigFile can know
-// when the array ends. And it would only be able to take 1 line at a time, because ConfigFile
-// won't know anything about arrays except them starting with a "{".
-/*bool Option::parseArrayString(const std::string& arrayStr)
-{
-    // This will have to handle escape codes and all in order to work with multiple elements
-    // on the same line. This could split all of the elements into an array, and then pass
-    // it to parseArrayLines();
-    // Something like this:
-    // parseArrayLines(split(arrayStr));
-    return false;
-}
-
-bool Option::parseArrayLines(const std::vector<std::string>& lines)
-{
-    return false;
-}*/
 
 bool Option::isInRange(double num)
 {

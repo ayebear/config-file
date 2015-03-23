@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #include "strlib.h"
 #include <fstream>
@@ -17,83 +17,31 @@ void trimWhitespace(std::string& str)
         str.erase(str.begin()); // Remove first character
 }
 
-bool trimQuotes(std::string& str)
-{
-    bool status = false;
-    if (str.size() >= 2) // If there are at least 2 characters in the string
-    {
-        if (areQuotes(str.front(), str.back())) // If the outsides of the string have quotes
-        {
-            // Remove the quotes
-            str.pop_back();
-            str.erase(str.begin());
-            status = true;
-        }
-    }
-    return status;
-}
-
 void stripNewLines(std::string& str)
 {
     if (!str.empty())
     {
-        for (char newLineChar: {'\r', '\n'})
+        for (char newLineChar: "\r\n")
             str.erase(std::remove(str.begin(), str.end(), newLineChar), str.end());
     }
 }
 
-unsigned replaceAll(std::string& str, const std::string& findStr, const std::string& replaceStr)
-{
-    unsigned count = 0;
-    size_t pos = 0;
-    // Keep searching for the string to find
-    while ((pos = str.find(findStr, pos)) != std::string::npos)
-    {
-        // Replace the found string with the replace string
-        str.replace(pos, findStr.length(), replaceStr);
-        pos += replaceStr.size();
-        ++count;
-    }
-    return count; // Return the number of occurrences that were replaced
-}
-
-void split(const std::string& inStr, const std::string& delim, std::vector<std::string>& outVec, bool allowEmpty)
-{
-    size_t start = 0;
-    size_t end = 0;
-    // Keep searching for the delimiters to split
-    while ((end = inStr.find(delim, start)) != std::string::npos)
-    {
-        if (allowEmpty || start != end) // Always add the string if empty strings are allowed, otherwise make sure the string being added is not empty
-            outVec.push_back(inStr.substr(start, end - start)); // Add the sub string between the delimiters to the vector
-        start = end + delim.size();
-    }
-    // Get the last part of the string
-    if (start < inStr.size())
-        outVec.push_back(inStr.substr(start, inStr.size()));
-}
-
-std::vector<std::string> split(const std::string& str, const std::string& delim)
-{
-    std::vector<std::string> elements;
-    split(str, delim, elements, true);
-    return elements;
-}
-
-std::string toLower(std::string str)
+std::string toLower(const std::string& str)
 {
     // Make all of the characters lowercase
-    for (char& c: str)
+    std::string tmpStr(str);
+    for (char& c: tmpStr)
         c = tolower(c);
-    return str;
+    return tmpStr;
 }
 
-bool areQuotes(char c1, char c2)
+std::string toUpper(const std::string& str)
 {
-    // Both characters must be the same
-    // Both of them must be either single quotes or double quotes
-    // Only need to compare one char instead of both, because they must be equal due to the first check
-    return ((c1 == c2) && (c1 == '"' || c1 == '\''));
+    // Make all of the characters uppercase
+    std::string tmpStr(str);
+    for (char& c: tmpStr)
+        c = toupper(c);
+    return tmpStr;
 }
 
 bool mustEndWith(std::string& str, const std::string& endStr)
@@ -109,16 +57,59 @@ bool mustEndWith(std::string& str, const std::string& endStr)
     return endsWith;
 }
 
-void getLinesFromString(std::string inStr, std::vector<std::string>& lines, bool allowEmpty)
+size_t replaceAll(std::string& str, const std::string& findStr, const std::string& replaceStr)
 {
-    // First, search and replace all CRLF with LF, and then CR with LF
-    while (replaceAll(inStr, "\r\n", "\n")); // This needs to be a while loop in case there is something like "\r\r\n"
-    replaceAll(inStr, "\r", "\n");
-    // Then, split the string on the LF characters into the vector
-    split(inStr, "\n", lines, allowEmpty);
+    size_t count{0};
+    size_t pos{0};
+    // Keep searching for the string to find
+    while ((pos = str.find(findStr, pos)) != std::string::npos)
+    {
+        // Replace the found string with the replace string
+        str.replace(pos, findStr.length(), replaceStr);
+        pos += replaceStr.size();
+        ++count;
+    }
+    return count; // Return the number of occurrences that were replaced
 }
 
-bool readLinesFromFile(const std::string& filename, std::vector<std::string>& lines, bool allowEmpty)
+std::vector<std::string> split(const std::string& str, const std::string& delim)
+{
+    size_t start{0};
+    size_t end{0};
+    std::vector<std::string> elements;
+
+    // Keep searching for the delimiters to split
+    while ((end = str.find(delim, start)) != std::string::npos)
+    {
+        // Extract the string between the delimiters, and add it to the vector
+        if (start != end)
+            elements.push_back(str.substr(start, end - start));
+        start = end + delim.size();
+    }
+
+    // Get the last part of the string
+    if (start < str.size())
+        elements.push_back(str.substr(start));
+
+    return elements;
+}
+
+std::vector<std::string> getLinesFromString(const std::string& str)
+{
+    std::string tmpStr(str);
+
+    // First, search and replace all CRLF with LF
+    // This needs to be a while loop in case there is something like "\r\r\n"
+    while (replaceAll(tmpStr, "\r\n", "\n"));
+
+    // Then, replace CR with LF
+    replaceAll(tmpStr, "\r", "\n");
+
+    // Finally, split on LF
+    return split(tmpStr, "\n");
+}
+
+bool readLinesFromFile(const std::string& filename, std::vector<std::string>& lines)
 {
     bool status = false;
     std::ifstream file(filename, std::ifstream::in); // Open the file
@@ -128,8 +119,7 @@ bool readLinesFromFile(const std::string& filename, std::vector<std::string>& li
         while (getline(file, line)) // Read a line
         {
             stripNewLines(line); // Make sure to strip any leftover new line characters
-            if (allowEmpty || !line.empty()) // If the line is not empty
-                lines.push_back(line); // Store the line
+            lines.push_back(line); // Store the line
         }
         status = true;
     }
@@ -161,7 +151,7 @@ bool strToBool(const std::string& str)
 bool isBool(const std::string& str)
 {
     // The string is only a boolean if it is either "true" or "false"
-    std::string lowerStr = toLower(str);
+    auto lowerStr = toLower(str);
     return (lowerStr == "true" || lowerStr == "false");
 }
 

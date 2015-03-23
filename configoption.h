@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #ifndef CFG_OPTION_H
 #define CFG_OPTION_H
@@ -18,7 +18,7 @@ class Option
     using OptionVector = std::vector<Option>;
 
     public:
-        Option(); // Default constructor
+        Option() {} // Default constructor
         Option(const std::string& data); // Initialize with a string value
         Option(const Option& data); // Copy constructor
 
@@ -64,8 +64,8 @@ class Option
         void clear();
         OptionVector::iterator begin();
         OptionVector::iterator end();
-        OptionVector::const_iterator begin() const;
-        OptionVector::const_iterator end() const;
+        OptionVector::const_iterator cbegin() const;
+        OptionVector::const_iterator cend() const;
 
         // Arrays as strings
         std::string buildArrayString(const std::string& indentStr = "") const; // Returns the array in string format
@@ -85,15 +85,15 @@ class Option
 
         // The "set" function will set all of these, no matter what the type is
         std::string str;
-        long number;
-        double decimal;
-        bool logical;
+        long number{};
+        double decimal{};
+        bool logical{};
 
-        bool quotes;
+        bool quotes{};
 
-        RangeType range;
-        double rangeMin;
-        double rangeMax;
+        RangeType range{NoRange};
+        double rangeMin{};
+        double rangeMax{};
 
         std::unique_ptr<OptionVector> options;
         // Wrapping the vector with a pointer to prevent recursive construction and incomplete type issues

@@ -1,5 +1,5 @@
 // Copyright (C) 2014-2015 Eric Hebert (ayebear)
-// This code is licensed under GPLv3, see LICENSE.txt for details.
+// This code is licensed under LGPLv3, see LICENSE.txt for details.
 
 #include "configfile.h"
 #include <fstream>
@@ -43,7 +43,7 @@ bool File::loadFromFile(const std::string& filename)
 {
     configFilename = filename;
     std::vector<std::string> lines;
-    fileIoSuccessful = strlib::readLinesFromFile(configFilename, lines, false);
+    fileIoSuccessful = strlib::readLinesFromFile(configFilename, lines);
     if (fileIoSuccessful)
         parseLines(lines);
     else if (flags & Errors)
@@ -53,8 +53,7 @@ bool File::loadFromFile(const std::string& filename)
 
 void File::loadFromString(const std::string& str)
 {
-    std::vector<std::string> lines;
-    strlib::getLinesFromString(str, lines, false);
+    auto lines = strlib::getLinesFromString(str);
     parseLines(lines);
 }
 
@@ -302,7 +301,7 @@ void File::parseOptionLine(const std::string& line, const std::string& section)
 bool File::setOption(Option& option, const std::string& value)
 {
     std::string trimmedValue = value;
-    bool trimmedQuotes = strlib::trimQuotes(trimmedValue); // Remove quotes if any
+    bool trimmedQuotes = trimQuotes(trimmedValue); // Remove quotes if any
     bool optionSet = (option = trimmedValue); // Try to set the option
     if (trimmedQuotes) // If quotes were removed
         option.setQuotes(true); // Add quotes to the option
@@ -322,6 +321,25 @@ void File::startArray(Option& option)
 {
     option.push(); // This new option will be holding the array starting with this "{"
     currentArrayStack.push_back(option.size() - 1);
+}
+
+bool File::areQuotes(char c1, char c2)
+{
+    // Both characters must be the same, either single quotes or double quotes
+    return ((c1 == c2) && (c1 == '"' || c1 == '\''));
+}
+
+bool File::trimQuotes(std::string& str)
+{
+    bool status = false;
+    if (str.size() >= 2 && areQuotes(str.front(), str.back()))
+    {
+        // Remove the quotes
+        str.pop_back();
+        str.erase(str.begin());
+        status = true;
+    }
+    return status;
 }
 
 bool File::isEndComment(const std::string& str) const
