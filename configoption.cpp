@@ -20,8 +20,7 @@ Option::Option(const Option& data)
 
 void Option::reset()
 {
-    quotes = false;
-    range = NoRange;
+    removeRange();
     options.reset();
     operator=(0);
 }
@@ -38,12 +37,13 @@ bool Option::operator=(const std::string& data)
 
 Option& Option::operator=(const Option& data)
 {
-    str = data.str;
-    number = data.number;
+    text = data.text;
+    integer = data.integer;
     decimal = data.decimal;
-    logical = data.logical;
+    boolean = data.boolean;
     quotes = data.quotes;
-    range = data.range;
+    minEnabled = data.minEnabled;
+    maxEnabled = data.maxEnabled;
     rangeMin = data.rangeMin;
     rangeMax = data.rangeMax;
     if (data.options)
@@ -64,11 +64,21 @@ bool Option::setString(const std::string& data)
     // Only set the value if it's in range
     if (isInRange(value))
     {
-        decimal = value; // Set the decimal from the temporary one
-        number = decimal; // Truncate to an int
-        quotes = !(success || strlib::isBool(data)); // No quotes around a number or a boolean
-        logical = (success ? (decimal != 0) : strlib::strToBool(data)); // Convert to a boolean
-        str = data; // Set the string
+        decimal = value;
+        integer = decimal;
+        text = data;
+
+        // Check for a boolean value
+        auto lowerStr = strlib::toLower(data);
+        bool isTrue = (lowerStr == "true");
+        bool isFalse = (lowerStr == "false");
+
+        // Determine if quotes are necessary
+        quotes = !(success || isFalse || isTrue);
+
+        // Convert to a boolean ("true" means true, or any non-zero value)
+        boolean = (success ? (decimal != 0) : isTrue);
+
         return true;
     }
     return false;
@@ -76,23 +86,23 @@ bool Option::setString(const std::string& data)
 
 const std::string& Option::toString() const
 {
-    return str;
+    return text;
 }
 
 std::string Option::toStringWithQuotes() const
 {
     // Automatically append quotes to the string if it originally had them
-    return (quotes ? ('"' + str + '"') : str);
+    return (quotes ? ('"' + text + '"') : text);
 }
 
 int Option::toInt() const
 {
-    return number;
+    return integer;
 }
 
 long Option::toLong() const
 {
-    return static_cast<long>(number);
+    return static_cast<long>(integer);
 }
 
 float Option::toFloat() const
@@ -107,17 +117,17 @@ double Option::toDouble() const
 
 bool Option::toBool() const
 {
-    return logical;
+    return boolean;
 }
 
 char Option::toChar() const
 {
-    return static_cast<char>(number);
+    return static_cast<char>(integer);
 }
 
 Option::operator const std::string&() const
 {
-    return str;
+    return text;
 }
 
 void Option::setQuotes(bool setting)
@@ -130,22 +140,28 @@ bool Option::hasQuotes()
     return quotes;
 }
 
-void Option::setRange(double num1)
+void Option::setMin(double minimum)
 {
-    rangeMin = num1;
-    range = MinRange;
+    rangeMin = minimum;
+    minEnabled = true;
 }
 
-void Option::setRange(double num1, double num2)
+void Option::setMax(double maximum)
 {
-    rangeMin = num1;
-    rangeMax = num2;
-    range = MinMaxRange;
+    rangeMax = maximum;
+    maxEnabled = true;
+}
+
+void Option::setRange(double minimum, double maximum)
+{
+    setMin(minimum);
+    setMax(maximum);
 }
 
 void Option::removeRange()
 {
-    range = NoRange;
+    minEnabled = false;
+    maxEnabled = false;
 }
 
 Option& Option::push(const Option& opt)
@@ -216,6 +232,7 @@ std::string Option::buildArrayString(const std::string& indentStr) const
     if (options)
     {
         std::string nextIndentStr(indentStr + '\t');
+
         // Build the array string
         std::string arrayStr("{\n");
         unsigned arraySize = options->size();
@@ -235,9 +252,8 @@ std::string Option::buildArrayString(const std::string& indentStr) const
 
 bool Option::isInRange(double num)
 {
-    return ((range == NoRange) || // If there is no range, then it will always be in range
-            (range == MinRange && num >= rangeMin) || // If a minimum range is set, make sure the number is >= the minimum range
-            (range == MinMaxRange && num >= rangeMin && num <= rangeMax)); // If a full range is set, make sure the number is between the minimum and maximum numbers
+    return ((!minEnabled || num >= rangeMin) &&
+            (!maxEnabled || num <= rangeMax));
 }
 
 std::ostream& operator<<(std::ostream& stream, const Option& option)

@@ -51,8 +51,9 @@ class Option
         bool hasQuotes();
 
         // For setting the valid range
-        void setRange(double num1);
-        void setRange(double num1, double num2);
+        void setMin(double minimum);
+        void setMax(double maximum);
+        void setRange(double minimum, double maximum);
         void removeRange();
 
         // Array manipulation
@@ -67,31 +68,22 @@ class Option
         OptionVector::const_iterator cbegin() const;
         OptionVector::const_iterator cend() const;
 
-        // Arrays as strings
-        std::string buildArrayString(const std::string& indentStr = "") const; // Returns the array in string format
-        //bool parseArrayString(const std::string& arrayStr); // Sets the array elements from a string
-        //bool parseArrayLines(const std::vector<std::string>& lines); // Sets the array elements from multiple lines
-            // Note: This will be moved to private later.
+        // Converts the entire option array to a string
+        std::string buildArrayString(const std::string& indentStr = "") const;
 
     private:
         bool isInRange(double num);
 
-        enum RangeType
-        {
-            NoRange = 0,
-            MinRange,
-            MinMaxRange
-        };
-
         // The "set" function will set all of these, no matter what the type is
-        std::string str;
-        long number{};
+        std::string text;
+        long integer{};
         double decimal{};
-        bool logical{};
-
+        bool boolean{};
         bool quotes{};
 
-        RangeType range{NoRange};
+        // Optional range restrictions
+        bool minEnabled{};
+        bool maxEnabled{};
         double rangeMin{};
         double rangeMax{};
 
@@ -109,12 +101,12 @@ template <typename Type>
 bool Option::operator=(Type data)
 {
     // Only set the value if it is in range
-    if (isInRange((double)data))
+    if (isInRange(static_cast<double>(data)))
     {
-        number = data;
+        integer = data;
         decimal = data;
-        logical = (data != 0);
-        str = strlib::toString<Type>(data);
+        boolean = (data != 0);
+        text = strlib::toString<Type>(data);
         quotes = false;
         return true;
     }
@@ -141,20 +133,20 @@ Option makeOption(Type data)
 }
 
 template <typename Type>
-Option makeOption(Type data, double num1)
+Option makeOption(Type data, double minimum)
 {
     Option tmp;
     tmp = data;
-    tmp.setRange(num1);
+    tmp.setMin(minimum);
     return tmp;
 }
 
 template <typename Type>
-Option makeOption(Type data, double num1, double num2)
+Option makeOption(Type data, double minimum, double maximum)
 {
     Option tmp;
     tmp = data;
-    tmp.setRange(num1, num2);
+    tmp.setRange(minimum, maximum);
     return tmp;
 }
 

@@ -57,9 +57,6 @@ bool writeStringToFile(const std::string& filename, const std::string& data);
 // Parses a string to determine its boolean value
 bool strToBool(const std::string& str);
 
-// Determines if a string is either "true" or "false"
-bool isBool(const std::string& str);
-
 // Converts most types to strings using a string stream
 template <typename T>
 std::string toString(T data, unsigned precision = 16)

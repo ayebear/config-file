@@ -144,15 +144,8 @@ bool writeStringToFile(const std::string& filename, const std::string& data)
 
 bool strToBool(const std::string& str)
 {
-    // The string should only be true if it is "true"
-    return (toLower(str) == "true");
-}
-
-bool isBool(const std::string& str)
-{
-    // The string is only a boolean if it is either "true" or "false"
-    auto lowerStr = toLower(str);
-    return (lowerStr == "true" || lowerStr == "false");
+    // Check if the string is "true", or if the parsed value is non-zero
+    return (toLower(str) == "true" || fromString<int>(str) != 0);
 }
 
 }
