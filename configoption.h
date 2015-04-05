@@ -68,6 +68,10 @@ class Option
         OptionVector::const_iterator cbegin() const;
         OptionVector::const_iterator cend() const;
 
+        // Adds an array element
+        template <typename Type>
+        Option& operator<<(const Type& data);
+
         // Converts the entire option array to a string
         std::string buildArrayString(const std::string& indentStr = "") const;
 
@@ -148,6 +152,13 @@ Option makeOption(Type data, double minimum, double maximum)
     tmp = data;
     tmp.setRange(minimum, maximum);
     return tmp;
+}
+
+template <typename Type>
+Option& Option::operator<<(const Type& data)
+{
+    push() = data;
+    return *this;
 }
 
 }
