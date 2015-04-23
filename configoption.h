@@ -7,6 +7,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <limits>
 #include "strlib.h"
 
 namespace cfg
@@ -28,7 +29,8 @@ class Option
         bool operator=(const char* data);
         bool operator=(const std::string& data);
         Option& operator=(const Option& data);
-        template <typename Type> bool operator=(Type data);
+        template <typename Type>
+        bool operator=(Type data);
         bool setString(const std::string& data);
 
         // Getting will simply return the precomputed values
@@ -41,9 +43,23 @@ class Option
         bool toBool() const;
         char toChar() const; // Based on int
 
-        // This will try to cast the decimal to another type
-        template <typename Type> Type to() const;
+        // This will try to cast the value to another type
+        template <typename Type>
+        Type to() const;
 
+        // Another form of getting values using overloads
+        void get(std::string& val) const;
+        void get(long& val) const;
+        void get(double& val) const;
+        void get(bool& val) const;
+        template <typename Type>
+        const Option& get(Type& data) const;
+
+        // Extract value (uses overloads above)
+        template <typename Type>
+        const Option& operator>>(Type& data) const;
+
+        // Implicit string cast
         operator const std::string&() const;
 
         // For determining if the option was originally read in as a string with quotes
@@ -120,6 +136,8 @@ bool Option::operator=(Type data)
 template <typename Type>
 Type Option::to() const
 {
+    if (std::numeric_limits<Type>::is_integer)
+        return static_cast<Type>(integer);
     return static_cast<Type>(decimal);
 }
 
@@ -158,6 +176,20 @@ template <typename Type>
 Option& Option::operator<<(const Type& data)
 {
     push() = data;
+    return *this;
+}
+
+template <typename Type>
+const Option& Option::get(Type& data) const
+{
+    data = to<Type>();
+    return *this;
+}
+
+template <typename Type>
+const Option& Option::operator>>(Type& data) const
+{
+    get(data);
     return *this;
 }
 

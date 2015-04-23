@@ -125,6 +125,26 @@ char Option::toChar() const
     return static_cast<char>(integer);
 }
 
+void Option::get(std::string& val) const
+{
+    val = text;
+}
+
+void Option::get(long& val) const
+{
+    val = integer;
+}
+
+void Option::get(double& val) const
+{
+    val = decimal;
+}
+
+void Option::get(bool& val) const
+{
+    val = boolean;
+}
+
 Option::operator const std::string&() const
 {
     return text;
