@@ -53,11 +53,11 @@ class Option
         void get(double& val) const;
         void get(bool& val) const;
         template <typename Type>
-        const Option& get(Type& data) const;
+        const Option& get(Type& val) const;
 
         // Extract value (uses overloads above)
         template <typename Type>
-        const Option& operator>>(Type& data) const;
+        const Option& operator>>(Type& val) const;
 
         // Implicit string cast
         operator const std::string&() const;
@@ -79,6 +79,8 @@ class Option
         Option& back();
         unsigned size() const;
         void clear();
+
+        // Iterators for the array
         OptionVector::iterator begin();
         OptionVector::iterator end();
         OptionVector::const_iterator cbegin() const;
@@ -86,7 +88,7 @@ class Option
 
         // Adds an array element
         template <typename Type>
-        Option& operator<<(const Type& data);
+        Option& operator<<(const Type& val);
 
         // Converts the entire option array to a string
         std::string buildArrayString(const std::string& indentStr = "") const;
@@ -173,23 +175,23 @@ Option makeOption(Type data, double minimum, double maximum)
 }
 
 template <typename Type>
-Option& Option::operator<<(const Type& data)
+Option& Option::operator<<(const Type& val)
 {
-    push() = data;
+    push() = val;
     return *this;
 }
 
 template <typename Type>
-const Option& Option::get(Type& data) const
+const Option& Option::get(Type& val) const
 {
-    data = to<Type>();
+    val = to<Type>();
     return *this;
 }
 
 template <typename Type>
-const Option& Option::operator>>(Type& data) const
+const Option& Option::operator>>(Type& val) const
 {
-    get(data);
+    get(val);
     return *this;
 }
 
