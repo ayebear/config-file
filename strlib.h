@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <cctype>
 
 namespace strlib
 {
@@ -39,6 +40,9 @@ std::vector<std::string> split(const std::string& str, const std::string& delim)
 template <typename T>
 std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue = 0);
 
+// Joins elements from any container into a string
+template <typename T>
+std::string join(T&& elements, const std::string& sepStr);
 
 /// File operations ===========================================================
 
@@ -84,6 +88,9 @@ T fromString(const std::string& str, T defaultValue = 0)
     return val;
 }
 
+
+/// Template implementations ===================================================
+
 template <typename T>
 std::vector<T> split(const std::string& str, const std::string& delim, T defaultValue)
 {
@@ -96,6 +103,20 @@ std::vector<T> split(const std::string& str, const std::string& delim, T default
     for (auto& s: strs)
         values.push_back(fromString<T>(s, defaultValue));
     return values;
+}
+
+template <typename T>
+std::string join(T&& elements, const std::string& sepStr)
+{
+    std::ostringstream stream;
+    auto first = &(*elements.begin());
+    for (const auto& elem: elements)
+    {
+        if (&elem != first)
+            stream << sepStr;
+        stream << elem;
+    }
+    return stream.str();
 }
 
 }
