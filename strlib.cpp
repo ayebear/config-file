@@ -82,8 +82,7 @@ std::vector<std::string> split(const std::string& str, const std::string& delim)
     while ((end = str.find(delim, start)) != std::string::npos)
     {
         // Extract the string between the delimiters, and add it to the vector
-        if (start != end)
-            elements.push_back(str.substr(start, end - start));
+        elements.push_back(str.substr(start, end - start));
         start = end + delim.size();
     }
 
