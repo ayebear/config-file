@@ -46,7 +46,7 @@ bool File::loadFromFile(const std::string& filename)
     fileIoSuccessful = strlib::readLinesFromFile(configFilename, lines);
     if (fileIoSuccessful)
         parseLines(lines);
-    else if (flags & Errors)
+    else if (flags & Verbose)
         std::cout << "Error loading \"" << configFilename << "\"\n";
     return fileIoSuccessful;
 }
@@ -63,7 +63,7 @@ bool File::writeToFile(std::string filename) const
         filename = configFilename;
     // Write the std::string to the output file
     fileIoSuccessful = strlib::writeStringToFile(filename, buildString());
-    if (!fileIoSuccessful && (flags & Errors))
+    if (!fileIoSuccessful && (flags & Verbose))
         std::cout << "Error writing \"" << configFilename << "\"\n";
     return fileIoSuccessful;
 }
@@ -288,7 +288,7 @@ void File::parseOptionLine(const std::string& line, const std::string& section)
             }
             else
             {
-                if (!setOption(option, value) && (flags & Warnings))
+                if (!setOption(option, value) && (flags & Verbose))
                 {
                     std::cout << "Warning: Option \"" << name << "\" in [" << section << "] was out of range.\n";
                     std::cout << "    Using default value: " << option.toStringWithQuotes() << std::endl;

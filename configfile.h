@@ -27,12 +27,12 @@ class File
     public:
         enum Flags
         {
-            NoFlags = 0,
-            Warnings = 1, // Print messages when options are out of range
-            Errors = 2,   // Print errors when loading/saving files
-            Autosave = 4, // Automatically save the last file loaded on destruction
-            AllFlags = 7
+            NoFlags = 0b0,
+            Verbose = 0b1,   // Display file IO errors and when options are out of range
+            Autosave = 0b01, // Automatically save the last file loaded on destruction
+            AllFlags = 0b11
         };
+        static const int DefaultFlags = Verbose;
 
         // Types used to store the options
         using Section = std::map<std::string, Option>;
@@ -40,9 +40,9 @@ class File
 
         // Constructors
         File();
-        File(const std::string& filename, int newFlags = NoFlags);
-        File(const ConfigMap& defaultOptions, int newFlags = NoFlags);
-        File(const std::string& filename, const ConfigMap& defaultOptions, int newFlags = NoFlags);
+        File(const std::string& filename, int newFlags = DefaultFlags);
+        File(const ConfigMap& defaultOptions, int newFlags = DefaultFlags);
+        File(const std::string& filename, const ConfigMap& defaultOptions, int newFlags = DefaultFlags);
         ~File();
 
         // Loading/saving
@@ -55,8 +55,8 @@ class File
         bool getStatus() const; // Returns true if the last file loaded/saved successfully
 
         // Settings
-        void setFlag(int flag, bool state = true);
-        void setFlags(int newFlags = NoFlags); // Set warnings, autosave, etc.
+        void setFlag(int flag, bool state = true); // Turns a flag on/off
+        void setFlags(int newFlags = DefaultFlags); // Overwrites all flags
 
         // Accessing/modifying options
         Option& operator()(const std::string& name, const std::string& section); // Returns a reference to an option with the specified name (and section). If it does not exist, it will be automatically created
