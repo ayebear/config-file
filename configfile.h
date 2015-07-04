@@ -27,9 +27,9 @@ class File
     public:
         enum Flags
         {
-            NoFlags = 0b0,
-            Verbose = 0b1,   // Display file IO errors and when options are out of range
-            Autosave = 0b01, // Automatically save the last file loaded on destruction
+            NoFlags = 0b00,
+            Verbose = 0b01,  // Display file IO errors and when options are out of range
+            Autosave = 0b10, // Automatically save the last file loaded on destruction
             AllFlags = 0b11
         };
         static const int DefaultFlags = Verbose;
