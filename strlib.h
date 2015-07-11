@@ -82,9 +82,10 @@ std::string toString(bool data)
 template <typename T>
 T fromString(const std::string& str, T defaultValue = 0)
 {
-    T val{defaultValue};
+    T val;
     std::istringstream stream(str);
-    stream >> val;
+    if ((stream >> val).fail())
+        val = defaultValue;
     return val;
 }
 
