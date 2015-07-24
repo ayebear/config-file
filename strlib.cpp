@@ -49,7 +49,7 @@ bool mustEndWith(std::string& str, const std::string& endStr)
     bool endsWith = true;
     // If the original string is smaller than what it should end with
     // Or if the original string does not end with the ending string
-    if (str.size() < endStr.size() || !str.compare(str.size() - endStr.size(), endStr.size(), endStr))
+    if (str.size() < endStr.size() || str.compare(str.size() - endStr.size(), endStr.size(), endStr))
     {
         str += endStr; // Then we know it doesn't already end with it!
         endsWith = false;
